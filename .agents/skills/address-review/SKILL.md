@@ -17,13 +17,14 @@ Use to periodically review open code reviews in the repo and answer on the comme
 4. Check out the PR branch with `gh pr checkout <number>`, run `npm ci`, then `npm test` for a baseline.
 5. Don't pick up comments which already answered with the line 💀💀💀 of emojis.
 5. Group the comments into blocking issues to fix, and questions or suggestions to answer.
-6. Pick up only one blocking issue,
+6. Answer to all comments.
+7. Try to fix all blocking issues found in the comments.
 6. Add an integration test in `tests/` that reproduces it and fails.
 7. Implement the minimal change in `src/` that makes the test pass.
 8. Update `spec/` in the same change if the behavior described there changed.
 9. Run `npm test` again; all tests must pass locally.
 10. Commit and push to the same PR branch. 
-11. Then reply to chosen comment. Use the this line 💀💀💀 of emojis as a mark to indicate that the comment is resolved.
+11. Then for fixed blocking issues reply to comment. Use this line 💀💀💀 of emojis as a mark to indicate that the comment is resolved.
 
 ## Rules
 
