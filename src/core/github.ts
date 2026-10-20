@@ -36,7 +36,8 @@ export async function openGitHub(input: string, options: GitHubOptions): Promise
 /**
  * Every repository of an organization, archived ones and forks too. With a token, one code search
  * for the whole organization tells which repositories have a SKILL.md; the others are not opened.
- * Code search leaves most forks out, so a fork is always opened, through its tree.
+ * Code search leaves most forks out, so a fork is always opened, through its tree; when the search
+ * does not return every SKILL.md, every repository is.
  */
 export async function openGitHubOrganization(input: string, options: GitHubOptions): Promise<OrganizationSource> {
   const login = parseGitHubOrganization(input);
@@ -60,8 +61,8 @@ export async function openGitHubOrganization(input: string, options: GitHubOptio
     repositories,
     warnings,
     async open(name) {
+      if (found === 'incomplete' || forks.has(name)) return openRepository(github, name, 'tree');
       if (!found) return openRepository(github, name);
-      if (forks.has(name)) return openRepository(github, name, 'tree');
       const paths = found.get(name);
       return paths && openRepository(github, name, paths);
     },
@@ -101,10 +102,16 @@ async function searchPaths(github: Client, id: string): Promise<string[]> {
   return [...new Set(items.map((item) => item.path))]; // pages can repeat a result
 }
 
-/** The SKILL.md files of each repository in the organization that has one, by `owner/name`. */
-async function searchOrganization(github: Client, id: string, warnings: string[]): Promise<Map<string, string[]>> {
+/**
+ * The SKILL.md files of each repository in the organization that has one, by `owner/name`;
+ * `incomplete` when code search does not return them all, so it cannot tell which repositories have none.
+ */
+async function searchOrganization(github: Client, id: string, warnings: string[]): Promise<Map<string, string[]> | 'incomplete'> {
   const { total, items } = await search(github, `org:${id}`);
-  if (total > items.length) warnings.push(`code search found ${total} SKILL.md files and returns only ${items.length}; the others are left out`);
+  if (total > items.length) {
+    warnings.push(`code search found ${total} SKILL.md files and returns only ${items.length}; each repository is read through its tree`);
+    return 'incomplete';
+  }
   const found = new Map<string, Set<string>>();
   for (const item of items) {
     const name = item.repository.full_name;

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { openGitHubOrganization } from '../src/core/github.ts';
-import { replay } from '../src/core/replay.ts';
+import { replay, type Recording } from '../src/core/replay.ts';
 import { scanOrganization } from '../src/core/scan.ts';
 import { atlas, EXAMPLE_COMMIT, TOOLS_COMMIT } from './helpers.ts';
 
@@ -136,4 +136,38 @@ test('with a token: a fork, which code search leaves out, through its tree; an a
     ],
   );
   assert.deepEqual(result.warnings, []);
+});
+
+test('with a token: more SKILL.md files than code search returns → each repository through its tree, and a warning', async () => {
+  const COMMIT = '3333333333333333333333333333333333333333';
+  // Ten full pages, all in Kotlin/many: the 1001st file, in Kotlin/late, is not returned.
+  const items = Array.from({ length: 100 }, (_, index) => ({ path: `skills/s${index}/SKILL.md`, repository: { full_name: 'Kotlin/many' } }));
+  const recording: Recording = {
+    'https://api.github.com/orgs/Kotlin': { status: 200, body: { login: 'Kotlin' } },
+    'https://api.github.com/orgs/Kotlin/repos?per_page=100&page=1': { status: 200, body: [{ full_name: 'Kotlin/late' }] },
+    'https://api.github.com/repos/Kotlin/late': { status: 200, body: { full_name: 'Kotlin/late', default_branch: 'main' } },
+    'https://api.github.com/repos/Kotlin/late/commits/main': { status: 200, body: { sha: COMMIT } },
+    [`https://api.github.com/repos/Kotlin/late/git/trees/${COMMIT}?recursive=1`]: {
+      status: 200,
+      body: { truncated: false, tree: [{ path: 'skills/late/SKILL.md', mode: '100644', type: 'blob', sha: '1' }] },
+    },
+    [`https://raw.githubusercontent.com/Kotlin/late/${COMMIT}/skills/late/SKILL.md`]: {
+      status: 200,
+      body: '---\nname: late\ndescription: Not in the first thousand.\n---\n',
+    },
+  };
+  for (let page = 1; page <= 10; page++) {
+    recording[`https://api.github.com/search/code?q=filename:SKILL.md+org:Kotlin&per_page=100&page=${page}`] = {
+      status: 200,
+      body: { total_count: 1001, items },
+    };
+  }
+  const result = await scanOrganization(await openGitHubOrganization('Kotlin', { fetch: replay(recording), token: 'test' }));
+  assert.deepEqual(
+    result.results.map(({ repository, skills }) => [repository.id, skills.map((skill) => skill.name)]),
+    [['Kotlin/late', ['late']]],
+  );
+  assert.deepEqual(result.warnings, [
+    'code search found 1001 SKILL.md files and returns only 1000; each repository is read through its tree',
+  ]);
 });
