@@ -1,4 +1,4 @@
-// The page in Chromium: tests/web.spec.ts, against `npm run build` served by tests/web-server.ts.
+// The page in Chromium: tests/web.spec.ts and the filter demo in tests/demo.spec.ts, against `npm run build` served by tests/web-server.ts.
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4174;

@@ -8,6 +8,7 @@ import { FIXTURE } from './helpers.ts';
 const VIEWPORT = { width: 1100, height: 700 };
 
 // Raster in one thread, the whole tile at once: else the anti-aliased corners differ by one in a channel.
+// Not the recorder's `chromium --disable-gpu`: the two runs are compared with each other, never with its video.
 test.use({ launchOptions: { args: ['--disable-partial-raster', '--disable-gpu-rasterization', '--num-raster-threads=1'] } });
 
 type Step = { name: string; act: (page: Page) => Promise<void> };
@@ -93,7 +94,7 @@ async function demo(browser: Browser, run: number): Promise<Buffer[]> {
 
 type Pixels = { width: number; height: number; channels: number; data: Buffer };
 
-// A PNG as Chromium writes it: 8 bits, RGB or RGBA, not interlaced; each row unfiltered.
+// A PNG as Chromium writes it: 8 bits, RGB or RGBA, not interlaced; every row is unfiltered here (filters 0–4).
 function decode(png: Buffer): Pixels {
   const width = png.readUInt32BE(16);
   const height = png.readUInt32BE(20);
@@ -139,6 +140,9 @@ function differentPixels(first: Buffer, second: Buffer): number {
 }
 
 test('the filter demo, run twice: the same screenshots, pixel for pixel', async ({ browser }) => {
+  // A page that never settles takes 2 runs × 5 steps × (20 waits of 100 ms + 21 screenshots): more than the
+  // default 30 s, which would hide stableScreenshot's error behind a generic timeout.
+  test.setTimeout(120_000);
   const first = await demo(browser, 1);
   const second = await demo(browser, 2);
   expect(second).toHaveLength(STEPS.length);
