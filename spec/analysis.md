@@ -12,3 +12,9 @@ Skill: id = `repo:path`, name, description, commit
 - The link pins the *scanned commit*
 - Malformed front matter → a *warning*, the scan goes on
 - Unreachable repository → a clear message, exit code 1
+## What is a project skill?
+- `<root>/<name>/SKILL.md`, `<root>` is one of:
+- `.agents/skills`, `.claude/skills`,
+- `.github/skills`, `agent/skills`
+- The same `<name>` in two roots → one skill, under the *first root listed*; the rest are its *copies*
+- Anything else → not a skill
