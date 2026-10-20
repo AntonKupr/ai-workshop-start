@@ -17,7 +17,8 @@ its other front matter and its *body*, the Markdown after it
 ## Organization
 - `<name>` or `https://github.com/<name>`; every repository, *archived and forks* too
 - With `GITHUB_TOKEN`: *one* code search for the organization; a repository without a hit
-  is not opened. Without it: each repository's tree
+  is not opened. A *fork*, which code search leaves out, is read through its tree.
+  Without it: each repository's tree
 - A repository that cannot be scanned → a *warning*, the scan goes on;
   the rate limit stops it
 - Unknown organization → a clear message, exit code 1

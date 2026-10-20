@@ -90,3 +90,50 @@ test('the rate limit stops the whole scan', async () => {
     message: 'GitHub rate limit reached; set GITHUB_TOKEN',
   });
 });
+
+test('with a token: a fork, which code search leaves out, through its tree; an archived repository through the search', async () => {
+  const FORK = '1111111111111111111111111111111111111111';
+  const ARCHIVED = '2222222222222222222222222222222222222222';
+  const recording = {
+    'https://api.github.com/orgs/Kotlin': { status: 200, body: { login: 'Kotlin' } },
+    'https://api.github.com/orgs/Kotlin/repos?per_page=100&page=1': {
+      status: 200,
+      body: [
+        { full_name: 'Kotlin/fork', fork: true, archived: false },
+        { full_name: 'Kotlin/old', fork: false, archived: true },
+        { full_name: 'Kotlin/plain', fork: false, archived: false },
+      ],
+    },
+    'https://api.github.com/search/code?q=filename:SKILL.md+org:Kotlin&per_page=100&page=1': {
+      status: 200,
+      body: { total_count: 1, items: [{ path: 'skills/old/SKILL.md', repository: { full_name: 'Kotlin/old' } }] },
+    },
+    'https://api.github.com/repos/Kotlin/fork': { status: 200, body: { full_name: 'Kotlin/fork', default_branch: 'main' } },
+    'https://api.github.com/repos/Kotlin/fork/commits/main': { status: 200, body: { sha: FORK } },
+    [`https://api.github.com/repos/Kotlin/fork/git/trees/${FORK}?recursive=1`]: {
+      status: 200,
+      body: { truncated: false, tree: [{ path: '.agents/skills/forked/SKILL.md', mode: '100644', type: 'blob', sha: '1' }] },
+    },
+    [`https://raw.githubusercontent.com/Kotlin/fork/${FORK}/.agents/skills/forked/SKILL.md`]: {
+      status: 200,
+      body: '---\nname: forked\ndescription: From a fork.\n---\n',
+    },
+    'https://api.github.com/repos/Kotlin/old': { status: 200, body: { full_name: 'Kotlin/old', default_branch: 'main' } },
+    'https://api.github.com/repos/Kotlin/old/commits/main': { status: 200, body: { sha: ARCHIVED } },
+    [`https://raw.githubusercontent.com/Kotlin/old/${ARCHIVED}/skills/old/SKILL.md`]: {
+      status: 200,
+      body: '---\nname: old\ndescription: From an archived repository.\n---\n',
+    },
+  };
+  // Kotlin/plain has no hit, so it is not opened: the replay fails any request for it.
+  const result = await scanOrganization(await openGitHubOrganization('Kotlin', { fetch: replay(recording), token: 'test' }));
+  assert.equal(result.repositories, 3);
+  assert.deepEqual(
+    result.results.map(({ repository, skills }) => [repository.id, skills.map((skill) => skill.name)]),
+    [
+      ['Kotlin/fork', ['forked']],
+      ['Kotlin/old', ['old']],
+    ],
+  );
+  assert.deepEqual(result.warnings, []);
+});

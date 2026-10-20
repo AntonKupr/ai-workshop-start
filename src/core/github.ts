@@ -36,6 +36,7 @@ export async function openGitHub(input: string, options: GitHubOptions): Promise
 /**
  * Every repository of an organization, archived ones and forks too. With a token, one code search
  * for the whole organization tells which repositories have a SKILL.md; the others are not opened.
+ * Code search leaves most forks out, so a fork is always opened, through its tree.
  */
 export async function openGitHubOrganization(input: string, options: GitHubOptions): Promise<OrganizationSource> {
   const login = parseGitHubOrganization(input);
@@ -43,9 +44,13 @@ export async function openGitHubOrganization(input: string, options: GitHubOptio
   const github = client(options);
   const { login: id } = await github.json<{ login: string }>(`${API}/orgs/${login}`, `Organization not found: https://github.com/${login}`);
   const repositories: string[] = [];
+  const forks = new Set<string>();
   for (let page = 1; ; page++) {
-    const answer = await github.json<{ full_name: string }[]>(`${API}/orgs/${id}/repos?per_page=100&page=${page}`);
-    repositories.push(...answer.map((repository) => repository.full_name));
+    const answer = await github.json<{ full_name: string; fork?: boolean }[]>(`${API}/orgs/${id}/repos?per_page=100&page=${page}`);
+    for (const repository of answer) {
+      repositories.push(repository.full_name);
+      if (repository.fork) forks.add(repository.full_name);
+    }
     if (answer.length < 100) break;
   }
   const warnings: string[] = [];
@@ -56,14 +61,19 @@ export async function openGitHubOrganization(input: string, options: GitHubOptio
     warnings,
     async open(name) {
       if (!found) return openRepository(github, name);
+      if (forks.has(name)) return openRepository(github, name, 'tree');
       const paths = found.get(name);
       return paths && openRepository(github, name, paths);
     },
   };
 }
 
-/** One repository, `owner/name`; its files from `paths`, else from code search or the tree. */
-async function openRepository(github: Client, name: string, paths?: string[]): Promise<Source> {
+/** One repository, `owner/name`; its files as listed in `paths`, or from code search or the tree. */
+async function openRepository(
+  github: Client,
+  name: string,
+  paths: string[] | 'search' | 'tree' = github.searches ? 'search' : 'tree',
+): Promise<Source> {
   const info = await github.json<{ full_name: string; default_branch: string }>(
     `${API}/repos/${name}`,
     `Repository not found: https://github.com/${name}`,
@@ -71,11 +81,15 @@ async function openRepository(github: Client, name: string, paths?: string[]): P
   const id = info.full_name;
   const { sha } = await github.json<{ sha: string }>(`${API}/repos/${id}/commits/${encodePath(info.default_branch)}`);
   const warnings: string[] = [];
-  paths ??= github.searches ? await searchPaths(github, id) : await treePaths(github, id, sha, warnings);
+  const listed = Array.isArray(paths)
+    ? paths
+    : paths === 'search'
+      ? await searchPaths(github, id)
+      : await treePaths(github, id, sha, warnings);
   const [organization, repo] = id.split('/');
   return {
     repository: { id, organization, name: repo, url: `https://github.com/${id}`, commit: sha },
-    paths,
+    paths: listed,
     warnings,
     read: (path) => github.raw(`${RAW}/${id}/${sha}/${encodePath(path)}`),
   };
