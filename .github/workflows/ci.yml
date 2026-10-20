@@ -20,10 +20,16 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
+      # The page's tests build it first: playwright.config.ts.
       - run: npm test
       # The real CLI on the fixture repository, as a user would run it: it must exit 0.
       - name: Smoke test
         run: |
           ./skill-atlas help
           ./skill-atlas scan ./fixture
+          npm run build
+          ./skill-atlas web --port 4173 & sleep 2
+          curl -sf 'http://localhost:4173/api/scan?input=./fixture' > /dev/null
+          curl -sf http://localhost:4173/ | grep -q '<div id="root">'

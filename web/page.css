@@ -1,0 +1,81 @@
+body {
+  margin: 0;
+  background: var(--ring-sidebar-background-color, #f7f9fa);
+  font-family: var(--ring-font-family, system-ui, sans-serif);
+}
+
+.atlas {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.atlas-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.atlas-input {
+  flex: 1;
+}
+
+.atlas-columns {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 2fr;
+  gap: 16px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.atlas-list ul,
+.atlas ul[data-test='skills'] {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.atlas-skill {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.atlas-skill:hover {
+  background: var(--ring-hover-background-color, #ebf6fc);
+}
+
+.atlas-skill_selected {
+  background: var(--ring-selected-background-color, #d4edf9);
+}
+
+.atlas-skill-name {
+  font-weight: 600;
+}
+
+.atlas-properties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.atlas-markdown {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.atlas-markdown pre {
+  overflow: auto;
+  padding: 8px;
+  background: var(--ring-sidebar-background-color, #f7f9fa);
+}
