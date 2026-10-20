@@ -1,6 +1,7 @@
 # Repository analysis
 ## Input
-A **GitHub repository** URL, or a local directory
+A **GitHub repository** URL, or a local directory;
+or a **GitHub organization**: every repository in it
 ## Output
 Every `SKILL.md`: **name**, **description**, **link**
 ## Architecture
@@ -13,3 +14,10 @@ its other front matter and its *body*, the Markdown after it
 - The link pins the *scanned commit*
 - Malformed front matter → a *warning*, the scan goes on
 - Unreachable repository → a clear message, exit code 1
+## Organization
+- `<name>` or `https://github.com/<name>`; every repository, *archived and forks* too
+- With `GITHUB_TOKEN`: *one* code search for the organization; a repository without a hit
+  is not opened. Without it: each repository's tree
+- A repository that cannot be scanned → a *warning*, the scan goes on;
+  the rate limit stops it
+- Unknown organization → a clear message, exit code 1

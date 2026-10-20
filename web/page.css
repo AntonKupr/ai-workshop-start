@@ -79,3 +79,12 @@ body {
   padding: 8px;
   background: var(--ring-sidebar-background-color, #f7f9fa);
 }
+
+.atlas-group {
+  padding: 12px 8px 4px;
+  font-weight: 600;
+}
+
+.atlas-group:first-child {
+  padding-top: 0;
+}

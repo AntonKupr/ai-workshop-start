@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { EXAMPLE_COMMIT, FIXTURE } from './helpers.ts';
+import { EXAMPLE_COMMIT, FIXTURE, TOOLS_COMMIT } from './helpers.ts';
 
 async function scan(page: Page, input: string, submit: 'enter' | 'click' = 'enter') {
   await page.goto('/');
@@ -91,4 +91,34 @@ test('the other front matter, and a SKILL.md whose HTML would run: sanitized', a
   } finally {
     rmSync(repository, { recursive: true, force: true });
   }
+});
+
+test('an organization: every repository with skills, its skills under it, and the warnings', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Organization').fill('JetBrains');
+  await page.getByLabel('Organization').press('Enter');
+  await expect(page.locator('[data-test~="header"]')).toHaveText('JetBrains · 4 repositories · 2 skills');
+  await expect(page.locator('[data-test~="group"]')).toHaveText(['JetBrains/example', 'JetBrains/tools']);
+  await expect(page.locator('[data-test="skill"] .atlas-skill-name')).toHaveText(['commits', 'release']);
+  await expect(page.locator('[data-test~="warnings"]')).toContainText(
+    'JetBrains/not-answered: Cannot reach GitHub: not recorded: https://api.github.com/repos/JetBrains/not-answered',
+  );
+
+  const view = page.locator('[data-test~="skill-view"]');
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('commits');
+  await page.locator('[data-test~="skill"]').filter({ hasText: 'release' }).click();
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('release');
+  await expect(view.locator('[data-test~="markdown"]').locator('h1')).toHaveText('Release');
+  await expect(view.locator('[data-test~="link"]')).toHaveAttribute(
+    'href',
+    `https://github.com/JetBrains/tools/blob/${TOOLS_COMMIT}/skills/release/SKILL.md`,
+  );
+});
+
+test('an organization that cannot be scanned → the message in an error banner; Look up scans too', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Organization').fill('a/b/c');
+  await page.getByRole('button', { name: 'Look up' }).click();
+  await expect(page.locator('[data-test~="error"]')).toContainText('Not a GitHub organization: a/b/c');
+  await expect(page.locator('[data-test~="header"]')).toHaveCount(0);
 });
