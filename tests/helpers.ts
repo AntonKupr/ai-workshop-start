@@ -1,4 +1,8 @@
 // Runs the commands the way the CLI does, with GitHub answering from EXAMPLE below.
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import type { TestContext } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { run } from '../src/commands.ts';
 import { openGitHub, parseGitHubUrl } from '../src/core/github.ts';
@@ -26,6 +30,22 @@ const EXAMPLE: Recording = {
 };
 
 const github = replay(EXAMPLE);
+
+/** A throwaway repository with the given files, `path → content`; removed when the test ends. */
+export function repository(t: TestContext, files: Record<string, string>): string {
+  const root = mkdtempSync(join(tmpdir(), 'skill-atlas-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (const [path, content] of Object.entries(files)) {
+    mkdirSync(dirname(join(root, path)), { recursive: true });
+    writeFileSync(join(root, path), content);
+  }
+  return root;
+}
+
+/** A SKILL.md with front matter, so a found skill prints its name and description. */
+export function skillFile(name: string, description = `What ${name} is for.`): string {
+  return `---\nname: ${name}\ndescription: ${description}\n---\n# ${name}\n`;
+}
 
 /** `skill-atlas <args>`, as the CLI runs it, with GitHub answering from EXAMPLE. */
 export async function atlas(args: string[]) {

@@ -17,4 +17,9 @@ Skill: id = `repo:path`, name, description, commit
 - `.agents/skills`, `.claude/skills`,
 - `.github/skills`, `agent/skills`
 - The same `<name>` in two roots → one skill, under the *first root listed*; the rest are its *copies*
-- Anything else → not a skill
+- `<name>` is the *directory*, compared exactly: `Commits` and `commits` are two skills
+- Anything else → not a skill, *silently*: no warning
+- A root *nested* in the repository, `packages/app/.claude/skills/x/SKILL.md`
+- A near-miss root, `.agents/skill`, `.github/skills-extra`, `agents/skills`
+- `<name>` *missing*, `.agents/skills/SKILL.md`, or *deeper*, `.claude/skills/a/b/SKILL.md`
+- A near-miss file, `skill.md`, `SKILL.md.bak`
