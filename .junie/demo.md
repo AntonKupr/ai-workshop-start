@@ -2,8 +2,8 @@ vm: template-vm
 
 ## Running inside the VM
 
-Skill Atlas has no dev server: the page is built with Vite into `dist/`, which is gitignored, so
-the build has to run in the VM before the server starts. From `/workspace`:
+The demo serves the built page, not Vite's dev server: the page is built with Vite into `dist/`,
+which is gitignored, so the build has to run in the VM before the server starts. From `/workspace`:
 
     npm ci
     npm run build
@@ -11,19 +11,21 @@ the build has to run in the VM before the server starts. From `/workspace`:
     # ready when http://localhost:4173 responds 200
 
 The server listens on `127.0.0.1:4173`, which is enough because Chromium runs inside the same VM.
-`npm ci` and `npm run build` take a while; wait for the ready signal instead of the log line.
+`./skill-atlas web` prints `Skill Atlas at http://localhost:4173` once it listens, but it starts even
+without `dist/web` and then answers `/` with 503 (`The web view is not built: run npm run build`),
+so wait for the 200 rather than the log line alone.
 
 ## Driving the page
 
 - The field at the top takes a GitHub URL or a directory; *Scan* or Enter scans.
 - A scan selects the first skill; the list is sorted by name, the filter field above it narrows it.
-- Useful inputs: `https://github.com/JetBrains/kotlin`, or the bundled `fixture` directory
+- Useful inputs: `https://github.com/JetBrains/kotlin`, or the bundled `/workspace/fixture` directory
   (a local path needs no network at all).
 
 ## Known quirks
 
 - `GITHUB_TOKEN` is not set, so GitHub scans use the anonymous rate limit (~60 requests an hour).
   Exhausting it shows `GitHub rate limit reached; set GITHUB_TOKEN` in an error banner — keep the
-  number of scans of real repositories small, or scan the local `fixture` directory instead.
+  number of scans of real repositories small, or scan the local `/workspace/fixture` directory instead.
 - Without a token a huge repository can warn that its tree was too large to list at once; the
   warning banner is expected, not a failure.

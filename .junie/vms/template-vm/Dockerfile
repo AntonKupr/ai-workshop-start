@@ -20,8 +20,12 @@ RUN set -eux; \
       arm64) arch=arm64 ;; \
       *) echo "unsupported architecture: $(dpkg --print-architecture)" >&2; exit 1 ;; \
     esac; \
-    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${arch}.tar.gz" -o /tmp/node.tar.gz; \
+    tarball="node-v${NODE_VERSION}-linux-${arch}.tar.gz"; \
+    cd /tmp; \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/${tarball}"; \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt"; \
+    grep " ${tarball}\$" SHASUMS256.txt | sha256sum -c -; \
     mkdir -p /opt/node; \
-    tar -xzf /tmp/node.tar.gz -C /opt/node --strip-components=1; \
-    rm /tmp/node.tar.gz
+    tar -xzf "${tarball}" -C /opt/node --strip-components=1; \
+    rm "${tarball}" SHASUMS256.txt
 ENV PATH=/opt/node/bin:$PATH
