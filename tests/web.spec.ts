@@ -86,6 +86,24 @@ test('a filter: by name or description, any case; the selection follows; a scan 
   await expect(names).toHaveText(['code-style', 'commits', 'release-checklist']);
 });
 
+test('the list and the SKILL.md grow with their content: never a fade over them', async ({ page }) => {
+  // Ring UI fades an island's bottom until a frame tells it nothing is below; every class ever set is recorded.
+  await page.addInitScript(`
+    globalThis.faded = [];
+    new MutationObserver(() => {
+      for (const element of document.querySelectorAll('[class*="Fade"]')) globalThis.faded.push(element.className);
+    }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  `);
+  await scan(page, FIXTURE);
+  const names = page.locator('[data-test="skill"] .atlas-skill-name');
+  for (const [filter, count] of [['', 3], ['commits', 1], ['', 3], ['release', 1], ['no such skill', 0]] as const) {
+    await page.getByLabel('Filter').fill(filter);
+    await expect(names).toHaveCount(count);
+  }
+  await expect(page.locator('[data-test="ring-island-content"]')).toHaveCount(1);
+  expect(await page.evaluate(() => (globalThis as { faded?: string[] }).faded)).toEqual([]);
+});
+
 test('an unreachable repository → the CLI message in an error banner', async ({ page }) => {
   await scan(page, join(FIXTURE, 'no-such-directory'));
   await expect(page.locator('[data-test~="error"]')).toContainText(/Not a GitHub URL or a readable directory: .*no-such-directory/);

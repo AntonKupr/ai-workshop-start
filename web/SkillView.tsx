@@ -15,7 +15,7 @@ export function SkillView({ skill }: { skill: WebSkill }) {
   return (
     <Island className="atlas-skill-view" data-test="skill-view">
       <Header border>{skill.name}</Header>
-      <Content>
+      <Content fade={false}>
         {skill.description && <Text data-test="description">{skill.description}</Text>}
         {properties.length > 0 && (
           <div className="atlas-properties" data-test="properties">

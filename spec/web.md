@@ -9,6 +9,7 @@ Built with **JetBrains Ring UI**; `npm run build` first. *Nothing is stored*.
 - The selected skill's **SKILL.md**: name, description, the other front matter,
   the body **rendered as Markdown**, the link pinned to the *scanned commit*
 - The first skill is selected after a scan; a click selects another
+- The list and the SKILL.md grow with their content: *no fade* over their bottom
 - A **filter** field above the list: only the skills whose name or description contains it,
   *in any case*, the spaces around it ignored; the *whole* description, not only the first
   sentence the list shows; none → `No skills match “<filter>”`. The header still counts every skill.

@@ -90,7 +90,8 @@ export function App() {
           <div className="atlas-columns">
             <Island className="atlas-list">
               <Header border>Skills</Header>
-              <Content>
+              {/* Islands grow with their content, nothing scrolls: no fade, which Ring UI may leave stale */}
+              <Content fade={false}>
                 <Input
                   label="Filter"
                   placeholder="Name or description"
