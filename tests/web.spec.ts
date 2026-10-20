@@ -50,6 +50,40 @@ test('a directory: every skill sorted by name, a warning, and a click selects an
   await expect(view.locator('[data-test~="link"]')).toHaveAttribute('href', `${pathToFileURL(FIXTURE).href}/.agents/skills/release-checklist/SKILL.md`);
 });
 
+test('a filter: by name or description, any case; the selection follows; a scan clears it', async ({ page }) => {
+  await scan(page, FIXTURE);
+  const names = page.locator('[data-test="skill"] .atlas-skill-name');
+  const view = page.locator('[data-test~="skill-view"]');
+  const filter = page.getByLabel('Filter');
+  await expect(names).toHaveText(['code-style', 'commits', 'release-checklist']);
+  await expect(filter).toHaveValue('');
+
+  await filter.fill('COMMIT');
+  await expect(names).toHaveText(['code-style', 'commits']);
+  await expect(page.locator('[data-test~="header"]')).toHaveText('fixture · 3 skills');
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('code-style');
+
+  await filter.fill('release');
+  await expect(names).toHaveText(['release-checklist']);
+  await expect(page.locator('[data-test~="skill"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('release-checklist');
+
+  await filter.fill('no such skill');
+  await expect(names).toHaveCount(0);
+  await expect(page.locator('[data-test~="no-match"]')).toHaveText('No skills match “no such skill”');
+  await expect(view).toHaveCount(0);
+
+  await filter.fill('');
+  await expect(names).toHaveText(['code-style', 'commits', 'release-checklist']);
+  await expect(page.locator('[data-test~="no-match"]')).toHaveCount(0);
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('code-style');
+
+  await filter.fill('commits');
+  await page.getByLabel('Repository').press('Enter');
+  await expect(filter).toHaveValue('');
+  await expect(names).toHaveText(['code-style', 'commits', 'release-checklist']);
+});
+
 test('an unreachable repository → the CLI message in an error banner', async ({ page }) => {
   await scan(page, join(FIXTURE, 'no-such-directory'));
   await expect(page.locator('[data-test~="error"]')).toContainText(/Not a GitHub URL or a readable directory: .*no-such-directory/);

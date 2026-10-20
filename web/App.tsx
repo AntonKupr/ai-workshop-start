@@ -8,8 +8,15 @@ import Link from '@jetbrains/ring-ui-built/components/link/link';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
 import Text from '@jetbrains/ring-ui-built/components/text/text';
 import { useState, type FormEvent } from 'react';
-import { scanRepository, type WebScan } from './api.ts';
+import { scanRepository, type WebScan, type WebSkill } from './api.ts';
 import { SkillView } from './SkillView.tsx';
+
+/** The skills whose name or description contains the filter, in any case. */
+function matching(skills: WebSkill[], filter: string): WebSkill[] {
+  const text = filter.trim().toLowerCase();
+  if (!text) return skills;
+  return skills.filter((skill) => `${skill.name}\n${skill.description}`.toLowerCase().includes(text));
+}
 
 export function App() {
   const [input, setInput] = useState('');
@@ -17,6 +24,7 @@ export function App() {
   const [result, setResult] = useState<WebScan>();
   const [error, setError] = useState<string>();
   const [selected, setSelected] = useState<string>();
+  const [filter, setFilter] = useState('');
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -25,6 +33,7 @@ export function App() {
     try {
       const scanned = await scanRepository(input);
       setResult(scanned);
+      setFilter('');
       setSelected(scanned.skills[0]?.id);
     } catch (failure) {
       setResult(undefined);
@@ -34,7 +43,15 @@ export function App() {
     }
   }
 
-  const skill = result?.skills.find((candidate) => candidate.id === selected);
+  // A skill the filter hides is no longer selected: the first match is.
+  function changeFilter(value: string) {
+    setFilter(value);
+    const matches = matching(result?.skills ?? [], value);
+    if (!matches.some((candidate) => candidate.id === selected)) setSelected(matches[0]?.id);
+  }
+
+  const shown = result ? matching(result.skills, filter) : [];
+  const skill = shown.find((candidate) => candidate.id === selected);
   const count = result && `${result.skills.length} ${result.skills.length === 1 ? 'skill' : 'skills'}`;
 
   return (
@@ -80,8 +97,22 @@ export function App() {
             <Island className="atlas-list">
               <Header border>Skills</Header>
               <Content>
+                <Input
+                  label="Filter"
+                  placeholder="Name or description"
+                  value={filter}
+                  onChange={(event) => changeFilter(event.target.value)}
+                  onClear={() => changeFilter('')}
+                  data-test="filter"
+                  className="atlas-filter"
+                />
+                {shown.length === 0 && result.skills.length > 0 && (
+                  <Text info data-test="no-match">
+                    No skills match “{filter}”
+                  </Text>
+                )}
                 <ul data-test="skills">
-                  {result.skills.map((item) => (
+                  {shown.map((item) => (
                     <li key={item.id}>
                       <button
                         type="button"
