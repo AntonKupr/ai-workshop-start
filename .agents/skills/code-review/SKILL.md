@@ -20,6 +20,8 @@ Use when reviewing a diff, pull request, or a set of local changes.
 
 - Every behavior change must come with a unit test covering the case in the spec.
 - If the change alters behavior described in `spec/`, the spec must be updated in the same change.
+- When found issues always classify them as one of five types: Blocking, Major, Medium, Trivial or Informational.
+- Always put the PR review state as Request changes when you found any Blocking or Major issues.
 
 ## Output
 
