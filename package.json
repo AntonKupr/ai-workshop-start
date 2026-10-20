@@ -2,7 +2,7 @@
   "name": "skill-atlas",
   "version": "0.1.0",
   "private": true,
-  "description": "Skill Atlas: every SKILL.md in a repository, in the terminal.",
+  "description": "Skill Atlas: every SKILL.md in a repository, in the terminal or in a web page.",
   "type": "module",
   "bin": {
     "skill-atlas": "src/cli.ts"
@@ -11,14 +11,26 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "node --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "build": "vite build",
+    "test": "node --test tests/*.test.ts && playwright test",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web"
   },
   "dependencies": {
+    "@jetbrains/ring-ui-built": "^7.0.131",
+    "core-js": "^3.51.0",
+    "dompurify": "^3.4.17",
+    "marked": "^18.1.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.0",
-    "typescript": "^7.0.2"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
   }
 }
