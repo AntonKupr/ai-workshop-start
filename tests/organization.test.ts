@@ -91,7 +91,7 @@ test('the rate limit stops the whole scan', async () => {
   });
 });
 
-test('with a token: a fork, which code search leaves out, through its tree; an archived repository through the search', async () => {
+test('with a token: a fork, which code search leaves out, through its tree; an archived repository through the search; warnings start with the repository id', async () => {
   const FORK = '1111111111111111111111111111111111111111';
   const ARCHIVED = '2222222222222222222222222222222222222222';
   const recording = {
@@ -112,11 +112,21 @@ test('with a token: a fork, which code search leaves out, through its tree; an a
     'https://api.github.com/repos/Kotlin/fork/commits/main': { status: 200, body: { sha: FORK } },
     [`https://api.github.com/repos/Kotlin/fork/git/trees/${FORK}?recursive=1`]: {
       status: 200,
-      body: { truncated: false, tree: [{ path: '.agents/skills/forked/SKILL.md', mode: '100644', type: 'blob', sha: '1' }] },
+      body: {
+        truncated: false,
+        tree: [
+          { path: '.agents/skills/forked/SKILL.md', mode: '100644', type: 'blob', sha: '1' },
+          { path: '.agents/skills/broken/SKILL.md', mode: '100644', type: 'blob', sha: '2' },
+        ],
+      },
     },
     [`https://raw.githubusercontent.com/Kotlin/fork/${FORK}/.agents/skills/forked/SKILL.md`]: {
       status: 200,
       body: '---\nname: forked\ndescription: From a fork.\n---\n',
+    },
+    [`https://raw.githubusercontent.com/Kotlin/fork/${FORK}/.agents/skills/broken/SKILL.md`]: {
+      status: 200,
+      body: '---\nname: [broken\n---\n',
     },
     'https://api.github.com/repos/Kotlin/old': { status: 200, body: { full_name: 'Kotlin/old', default_branch: 'main' } },
     'https://api.github.com/repos/Kotlin/old/commits/main': { status: 200, body: { sha: ARCHIVED } },
@@ -131,11 +141,13 @@ test('with a token: a fork, which code search leaves out, through its tree; an a
   assert.deepEqual(
     result.results.map(({ repository, skills }) => [repository.id, skills.map((skill) => skill.name)]),
     [
-      ['Kotlin/fork', ['forked']],
+      ['Kotlin/fork', ['broken', 'forked']],
       ['Kotlin/old', ['old']],
     ],
   );
-  assert.deepEqual(result.warnings, []);
+  // A skill's warning starts with its repository's id.
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0], /^Kotlin\/fork: \.agents\/skills\/broken\/SKILL\.md: malformed front matter: .*; using the directory name$/);
 });
 
 test('with a token: more SKILL.md files than code search returns → each repository through its tree, and a warning', async () => {
