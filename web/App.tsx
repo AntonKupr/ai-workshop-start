@@ -8,15 +8,9 @@ import Link from '@jetbrains/ring-ui-built/components/link/link';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
 import Text from '@jetbrains/ring-ui-built/components/text/text';
 import { useState, type FormEvent } from 'react';
-import { scanRepository, type WebScan, type WebSkill } from './api.ts';
+import { scanRepository, type WebScan } from './api.ts';
+import { matching } from './filter.ts';
 import { SkillView } from './SkillView.tsx';
-
-/** The skills whose name or description contains the filter, in any case. */
-function matching(skills: WebSkill[], filter: string): WebSkill[] {
-  const text = filter.trim().toLowerCase();
-  if (!text) return skills;
-  return skills.filter((skill) => `${skill.name}\n${skill.description}`.toLowerCase().includes(text));
-}
 
 export function App() {
   const [input, setInput] = useState('');
