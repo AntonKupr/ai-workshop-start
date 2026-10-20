@@ -26,3 +26,8 @@ test('filter: empty → every skill; no match → none', () => {
   assert.deepEqual(names(''), ['code-style', 'commits', 'release-checklist']);
   assert.deepEqual(names('no such skill'), []);
 });
+
+test('filter: the spaces around it are ignored', () => {
+  assert.deepEqual(names('  release  '), ['release-checklist']);
+  assert.deepEqual(names('   '), ['code-style', 'commits', 'release-checklist']);
+});

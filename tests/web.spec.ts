@@ -72,6 +72,8 @@ test('a filter: by name or description, any case; the selection follows; a scan 
   await expect(names).toHaveCount(0);
   await expect(page.locator('[data-test~="no-match"]')).toHaveText('No skills match “no such skill”');
   await expect(view).toHaveCount(0);
+  await filter.fill('  no such skill  ');
+  await expect(page.locator('[data-test~="no-match"]')).toHaveText('No skills match “no such skill”');
 
   await filter.fill('');
   await expect(names).toHaveText(['code-style', 'commits', 'release-checklist']);

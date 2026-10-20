@@ -102,7 +102,7 @@ export function App() {
                 />
                 {shown.length === 0 && result.skills.length > 0 && (
                   <Text info data-test="no-match">
-                    No skills match “{filter}”
+                    No skills match “{filter.trim()}”
                   </Text>
                 )}
                 <ul data-test="skills">
