@@ -13,11 +13,15 @@ build-tools-bump-gradle-api — Bumps the Gradle API version that Kotlin Gradle 
 …
 ```
 
-Set `GITHUB_TOKEN` for a higher GitHub rate limit. `npm test` runs the tests; the page's tests need
+Every repository of a GitHub organization at once: `./skill-atlas scan-org JetBrains` (or
+`https://github.com/JetBrains`) prints each repository with skills, the same way.
+
+Set `GITHUB_TOKEN` for a higher GitHub rate limit; with it, an organization takes one code search.
+`npm test` runs the tests; the page's tests need
 Chromium, `npx playwright install chromium`.
 
 The same in a web page, built with [Ring UI](https://github.com/JetBrains/ring-ui): a field for the
-repository, its skills, and each SKILL.md rendered.
+repository, one for an organization, the skills, and each SKILL.md rendered.
 
 ```console
 $ npm run build
