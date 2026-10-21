@@ -13,16 +13,16 @@ Use to implement an issue or fix a bug in the project
 
 1. Read the issue with `gh issue view <number>` and restate the expected behavior.
 2. Read `AGENTS.md` and the related spec in `spec/` before touching any code.
-3. Create a branch off `main` named `issue-<number>-<short-slug>`.
-4. Run `npm ci` in a fresh checkout, then `npm test` to confirm a green baseline.
-5. Add an integration test in `tests/` that reproduces the issue and fails.
-6. Implement the minimal change in `src/` that makes the test pass.
-7. Update `spec/` in the same change if the behavior described there changed.
-8. Run `npm test` again; all tests must pass locally.
-9. If any question about the decision stays open, ask it in the Slack channel
+3. If any question about the decision stays open, ask it in the Slack channel
    `akupr-channel` (channel id `C0CAVCXUD54`) of the "AI Workshop at JetBrains"
    workspace (`aiworkshopatjetbrains.slack.com`), using the `SLACK_BOT_TOKEN`
-   from the environment variables, and wait for the answer before proceeding.
+   from the environment variables, and wait for the answer before implementing.
+4. Create a branch off `main` named `issue-<number>-<short-slug>`.
+5. Run `npm ci` in a fresh checkout, then `npm test` to confirm a green baseline.
+6. Add an integration test in `tests/` that reproduces the issue and fails.
+7. Implement the minimal change in `src/` that makes the test pass.
+8. Update `spec/` in the same change if the behavior described there changed.
+9. Run `npm test` again; all tests must pass locally.
 10. Commit, push the branch, and open a PR to `main` with `gh pr create`.
 
 ## Rules
