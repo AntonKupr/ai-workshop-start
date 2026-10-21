@@ -37,8 +37,31 @@ body {
   list-style: none;
 }
 
+/* The list stays beside the SKILL.md and scrolls on its own, the filter on top.
+   It ends a gap above the window's bottom from wherever it starts: --atlas-list-top, set by App.tsx,
+   is where the columns start, under the header until the page scrolls and the list sticks at the gap. */
+.atlas-list {
+  --atlas-gap: calc(2 * var(--ring-unit, 8px));
+  position: sticky;
+  top: var(--atlas-gap);
+  box-sizing: border-box;
+  max-height: calc(100vh - max(var(--atlas-list-top, var(--atlas-gap)), var(--atlas-gap)) - var(--atlas-gap));
+}
+
+/* Over the content's top padding too, so nothing shows above it when the list scrolls.
+   2 * --ring-unit is Ring UI's default padding-top of .ring-island-scrollableWrapper: 0 with withoutPaddings. */
 .atlas-filter {
-  margin-bottom: 8px;
+  position: sticky;
+  z-index: 1;
+  top: calc(-2 * var(--ring-unit, 8px));
+  margin-top: calc(-2 * var(--ring-unit, 8px));
+  padding-top: calc(2 * var(--ring-unit, 8px));
+  padding-bottom: 8px;
+  background: var(--ring-content-background-color, #fff);
+}
+
+.atlas ul[data-test='skills'] > li + li {
+  border-top: 1px solid var(--ring-line-color, #dfe5eb);
 }
 
 .atlas-group-toggle {
@@ -82,9 +105,10 @@ body {
   flex-direction: column;
   gap: 2px;
   width: 100%;
-  padding: 8px;
+  padding: 8px 8px 8px 5px;
   border: none;
-  border-radius: 4px;
+  border-left: 3px solid transparent;
+  border-radius: 0;
   background: none;
   text-align: left;
   font: inherit;
@@ -96,7 +120,16 @@ body {
 }
 
 .atlas-skill_selected {
+  border-left-color: var(--ring-main-color, #008eff);
   background: var(--ring-selected-background-color, #d4edf9);
+}
+
+.atlas-skill-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .atlas-skill-name {

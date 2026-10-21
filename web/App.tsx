@@ -2,13 +2,13 @@
 import Banner from '@jetbrains/ring-ui-built/components/banner/banner';
 import Button from '@jetbrains/ring-ui-built/components/button/button';
 import Heading from '@jetbrains/ring-ui-built/components/heading/heading';
-import Input from '@jetbrains/ring-ui-built/components/input/input';
+import Input, { Size } from '@jetbrains/ring-ui-built/components/input/input';
 import Island, { Content, Header } from '@jetbrains/ring-ui-built/components/island/island';
 import Link from '@jetbrains/ring-ui-built/components/link/link';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
 import Text from '@jetbrains/ring-ui-built/components/text/text';
 import Toggle from '@jetbrains/ring-ui-built/components/toggle/toggle';
-import { useState, type FormEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { scanRepository, type WebScan, type WebSkill } from './api.ts';
 import { matching } from './filter.ts';
 import { groups } from './group.ts';
@@ -61,6 +61,22 @@ export function App() {
     setCollapsed(next);
   }
 
+  // The list fits the window from where it starts: under the header before the page scrolls,
+  // at its sticky top after. page.css reads that top from --atlas-list-top.
+  const columns = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = columns.current;
+    if (!element) return;
+    const fit = () => element.style.setProperty('--atlas-list-top', `${element.getBoundingClientRect().top}px`);
+    fit();
+    window.addEventListener('scroll', fit, { passive: true });
+    window.addEventListener('resize', fit);
+    return () => {
+      window.removeEventListener('scroll', fit);
+      window.removeEventListener('resize', fit);
+    };
+  }, [result]);
+
   const shown = result ? matching(result.skills, filter) : [];
   // Grouped over every skill, so that the groups stay put while filtering; a group with no match is hidden.
   const shownGroups =
@@ -111,7 +127,7 @@ export function App() {
               </ul>
             </Banner>
           )}
-          <div className="atlas-columns">
+          <div className="atlas-columns" ref={columns}>
             <Island className="atlas-list">
               <Header border>Skills</Header>
               <Content>
@@ -122,6 +138,7 @@ export function App() {
                   onChange={(event) => changeFilter(event.target.value)}
                   onClear={() => changeFilter('')}
                   data-test="filter"
+                  size={Size.FULL}
                   className="atlas-filter"
                 />
                 {shown.length === 0 && result.skills.length > 0 && (
@@ -181,7 +198,11 @@ function SkillList({ skills, selected, select }: { skills: WebSkill[]; selected?
             data-test="skill"
           >
             <span className="atlas-skill-name">{item.name}</span>
-            {item.summary && <Text info>{item.summary}</Text>}
+            {item.summary && (
+              <Text info className="atlas-skill-summary">
+                {item.summary}
+              </Text>
+            )}
             {item.copies.length > 0 && <Text info size={Text.Size.S}>also in {item.copies.join(', ')}</Text>}
           </button>
         </li>
