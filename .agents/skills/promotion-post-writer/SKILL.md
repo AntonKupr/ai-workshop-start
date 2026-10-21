@@ -1,6 +1,6 @@
 ---
 name: promotion-post-writer
-description: Read the code base of the Skill Atlas web application and write a long promotion post that sells it
+description: Read the code base of the Skill Atlas web application, write a long promotion post that sells it, and post it to Slack
 ---
 
 # Promotion post writer
@@ -10,7 +10,7 @@ description: Read the code base of the Skill Atlas web application and write a l
 Use when the user asks for a promotion, launch, marketing or "sell it" post about this
 web application — the Skill Atlas page served by `./skill-atlas web` and described in
 `spec/web.md`. Not for release notes or a status report: those are facts about a change,
-this is a post that sells the product.
+this is a post that sells the product. The finished post is posted to Slack.
 
 ## Checklist
 
@@ -36,7 +36,21 @@ this is a post that sells the product.
    maintain agent skills in their repositories.
 5. Write the post in the structure of Output, long form, then read it once against the
    notes from step 1 and cut every claim that is not backed by them.
-6. Hand the post to the user as Markdown, with the facts it rests on listed after it.
+6. Post the finished text to Slack with the `SLACK_BOT_TOKEN` from the environment
+   variables:
+
+   ```bash
+   curl -sS -X POST https://slack.com/api/chat.postMessage \
+     -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+     -H 'Content-type: application/json; charset=utf-8' \
+     --data @payload.json
+   ```
+
+   with `payload.json` containing `{"channel": "C0CAVCXUD54", "text": "<post>"}`.
+7. Check the Slack response: `"ok": true` means delivered; otherwise report the returned
+   error and do not claim the post was published.
+8. Hand the post to the user as Markdown, with the facts it rests on listed after it and
+   the Slack message link or timestamp.
 
 ## Rules
 
@@ -55,7 +69,14 @@ this is a post that sells the product.
   for a social post.
 - Commands are copy-pasteable and correct in a fenced block, exactly as the README
   spells them.
-- Never post or publish anywhere: the skill writes the text and stops.
+- Post to the `akupr-channel` channel (channel id `C0CAVCXUD54`) of the "AI Workshop at
+  JetBrains" workspace (`aiworkshopatjetbrains.slack.com`) only; never publish the post
+  anywhere else.
+- Send one message per run; do not split the post across messages.
+- Never print or echo the value of `SLACK_BOT_TOKEN`.
+- Slack renders mrkdwn, not Markdown: write links as `<url|label>`, `*bold*` with single
+  asterisks, and keep headings as plain lines — the Markdown headline markers of the
+  post are dropped in the Slack text.
 
 ## Output
 
@@ -86,5 +107,8 @@ A Markdown post of about 400–700 words, in this order:
 
 7. **Close** — one or two sentences and a call to action pointing at the repository.
 
+The same post goes to Slack as a single message, converted to mrkdwn.
+
 After the post, a short **Facts used** list: each claim with the file it came from, so the
-user can check it. Mention any requested claim that was dropped for lack of support.
+user can check it. Mention any requested claim that was dropped for lack of support, and
+report the Slack delivery — the message link or timestamp, or the error Slack returned.
