@@ -7,7 +7,7 @@ import Island, { Content, Header } from '@jetbrains/ring-ui-built/components/isl
 import Link from '@jetbrains/ring-ui-built/components/link/link';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
 import Text from '@jetbrains/ring-ui-built/components/text/text';
-import { useState, type FormEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { scanRepository, type WebScan } from './api.ts';
 import { matching } from './filter.ts';
 import { SkillView } from './SkillView.tsx';
@@ -43,6 +43,22 @@ export function App() {
     const matches = matching(result?.skills ?? [], value);
     if (!matches.some((candidate) => candidate.id === selected)) setSelected(matches[0]?.id);
   }
+
+  // The list fits the window from where it starts: under the header before the page scrolls,
+  // at its sticky top after. page.css reads that top from --atlas-list-top.
+  const columns = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = columns.current;
+    if (!element) return;
+    const fit = () => element.style.setProperty('--atlas-list-top', `${element.getBoundingClientRect().top}px`);
+    fit();
+    window.addEventListener('scroll', fit, { passive: true });
+    window.addEventListener('resize', fit);
+    return () => {
+      window.removeEventListener('scroll', fit);
+      window.removeEventListener('resize', fit);
+    };
+  }, [result]);
 
   const shown = result ? matching(result.skills, filter) : [];
   const skill = shown.find((candidate) => candidate.id === selected);
@@ -87,7 +103,7 @@ export function App() {
               </ul>
             </Banner>
           )}
-          <div className="atlas-columns">
+          <div className="atlas-columns" ref={columns}>
             <Island className="atlas-list">
               <Header border>Skills</Header>
               <Content>

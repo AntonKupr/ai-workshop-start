@@ -36,12 +36,14 @@ body {
   list-style: none;
 }
 
-/* The list stays beside the SKILL.md and scrolls on its own, the filter on top. */
+/* The list stays beside the SKILL.md and scrolls on its own, the filter on top.
+   It ends 16px above the window's bottom from wherever it starts: --atlas-list-top, set by App.tsx,
+   is where the columns start, under the header until the page scrolls and the list sticks at 16px. */
 .atlas-list {
   position: sticky;
   top: 16px;
   box-sizing: border-box;
-  max-height: calc(100vh - 32px);
+  max-height: calc(100vh - max(var(--atlas-list-top, 16px), 16px) - 16px);
 }
 
 /* Over the content's top padding too, so nothing shows above it when the list scrolls. */

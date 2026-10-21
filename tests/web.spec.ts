@@ -161,6 +161,10 @@ test('the list: the filter as wide as the list, a divider between skills, the se
     expect((await summary.boundingBox())!.height).toBeLessThanOrEqual(2 * lineHeight + 1);
 
     expect((await page.locator('.atlas-list').boundingBox())!.height).toBeLessThanOrEqual(800 - 32);
+    // In the window before the page scrolls too, under the header, not only once it sticks.
+    const list = (await page.locator('.atlas-list').boundingBox())!;
+    expect(list.y).toBeGreaterThan(16);
+    expect(list.y + list.height).toBeLessThanOrEqual(800);
     await skills.last().click();
     await expect(skills.last()).toHaveAttribute('aria-pressed', 'true');
     expect(await page.getByLabel('Filter').evaluate((input) => {
