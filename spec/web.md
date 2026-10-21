@@ -6,6 +6,8 @@ Built with **JetBrains Ring UI**; `npm run build` first. *Nothing is stored*.
 - A **field** for a GitHub URL or a directory; *Scan* or Enter scans
 - `<owner>/<repo> · N skills`, then the **list**: sorted by **name**,
   the description's *first sentence*, `also in <paths>` for copies
+- The list's own header: `Skills · N`, `Skills · K of N` while the filter hides any;
+  the skills *divided* by a line; a summary of *two lines at most*, the whole one in its tooltip
 - The selected skill's **SKILL.md**: name, description, the other front matter,
   the body **rendered as Markdown**, the link pinned to the *scanned commit*
 - The first skill is selected after a scan; a click selects another

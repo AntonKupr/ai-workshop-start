@@ -86,6 +86,44 @@ test('a filter: by name or description, any case; the selection follows; a scan 
   await expect(names).toHaveText(['code-style', 'commits', 'release-checklist']);
 });
 
+test('the list: its own count, K of N while filtering; skills apart; a long summary clamped to two lines', async ({ page }) => {
+  const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-long-'));
+  try {
+    const summary = `${'A very long first sentence that goes on and on '.repeat(12).trim()}.`;
+    for (const [name, description] of [
+      ['long', `${summary} Not in the summary.`],
+      ['short', 'Short.'],
+    ]) {
+      mkdirSync(join(repository, `.claude/skills/${name}`), { recursive: true });
+      writeFileSync(join(repository, `.claude/skills/${name}/SKILL.md`), `---\nname: ${name}\ndescription: ${description}\n---\n# ${name}\n`);
+    }
+    await scan(page, repository);
+    const count = page.locator('[data-test~="list-count"]');
+    await expect(count).toHaveText('· 2');
+    await page.getByLabel('Filter').fill('short');
+    await expect(count).toHaveText('· 1 of 2');
+    await page.getByLabel('Filter').fill('nothing');
+    await expect(count).toHaveText('· 0 of 2');
+    await page.getByLabel('Filter').fill('');
+    await expect(count).toHaveText('· 2');
+
+    const items = page.locator('[data-test~="skills"] > li');
+    await expect(items.nth(0)).toHaveCSS('border-top-width', '0px');
+    await expect(items.nth(1)).toHaveCSS('border-top-width', '1px');
+
+    const long = page.locator('[data-test~="skill"]').filter({ hasText: 'long' }).locator('[data-test~="summary"]');
+    await expect(long).toHaveText(summary);
+    await expect(long).toHaveAttribute('title', summary);
+    const line = await page.locator('[data-test~="skill"]').filter({ hasText: 'short' }).locator('[data-test~="summary"]').evaluate((element) => element.clientHeight);
+    const box = await long.evaluate((element) => ({ height: element.clientHeight, full: element.scrollHeight }));
+    expect(box.full).toBeGreaterThan(box.height);
+    expect(box.height).toBeLessThanOrEqual(2 * line);
+    expect(box.height).toBeGreaterThan(line);
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
+
 test('an unreachable repository → the CLI message in an error banner', async ({ page }) => {
   await scan(page, join(FIXTURE, 'no-such-directory'));
   await expect(page.locator('[data-test~="error"]')).toContainText(/Not a GitHub URL or a readable directory: .*no-such-directory/);

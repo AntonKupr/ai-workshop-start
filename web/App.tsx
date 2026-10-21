@@ -47,6 +47,8 @@ export function App() {
   const shown = result ? matching(result.skills, filter) : [];
   const skill = shown.find((candidate) => candidate.id === selected);
   const count = result && `${result.skills.length} ${result.skills.length === 1 ? 'skill' : 'skills'}`;
+  // The list's own count: `K of N` while the filter hides any.
+  const listed = result && (shown.length < result.skills.length ? `${shown.length} of ${result.skills.length}` : `${result.skills.length}`);
 
   return (
     <main className="atlas">
@@ -89,7 +91,9 @@ export function App() {
           )}
           <div className="atlas-columns">
             <Island className="atlas-list">
-              <Header border>Skills</Header>
+              <Header border>
+                Skills <span className="atlas-list-count" data-test="list-count">· {listed}</span>
+              </Header>
               <Content>
                 <Input
                   label="Filter"
@@ -116,7 +120,11 @@ export function App() {
                         data-test="skill"
                       >
                         <span className="atlas-skill-name">{item.name}</span>
-                        {item.summary && <Text info>{item.summary}</Text>}
+                        {item.summary && (
+                          <Text info className="atlas-skill-summary" title={item.summary} data-test="summary">
+                            {item.summary}
+                          </Text>
+                        )}
                         {item.copies.length > 0 && <Text info size={Text.Size.S}>also in {item.copies.join(', ')}</Text>}
                       </button>
                     </li>

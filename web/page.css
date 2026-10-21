@@ -36,6 +36,15 @@ body {
   list-style: none;
 }
 
+.atlas-list-count {
+  font-weight: normal;
+  color: var(--ring-secondary-color, #737577);
+}
+
+.atlas ul[data-test='skills'] > li + li {
+  border-top: 1px solid var(--ring-line-color, #dfe5eb);
+}
+
 .atlas-filter {
   margin-bottom: 8px;
 }
@@ -64,6 +73,15 @@ body {
 
 .atlas-skill-name {
   font-weight: 600;
+}
+
+/* Long summaries: two lines at most, the whole one in the tooltip. */
+.atlas-skill-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .atlas-properties {
