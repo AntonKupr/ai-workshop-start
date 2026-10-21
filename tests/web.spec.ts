@@ -128,3 +128,57 @@ test('the other front matter, and a SKILL.md whose HTML would run: sanitized', a
     rmSync(repository, { recursive: true, force: true });
   }
 });
+
+test('a toggle groups the list by the words the names share; a group collapses; the filter applies inside', async ({ page }) => {
+  const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-groups-'));
+  try {
+    for (const name of ['alpha-review', 'build-cache', 'build-scan', 'commits']) {
+      mkdirSync(join(repository, '.claude/skills', name), { recursive: true });
+      writeFileSync(join(repository, '.claude/skills', name, 'SKILL.md'), `---\nname: ${name}\ndescription: The ${name} skill.\n---\n`);
+    }
+    await scan(page, repository);
+    const names = page.locator('[data-test="skill"] .atlas-skill-name');
+    const headers = page.locator('[data-test="group"]');
+    const toggle = page.getByRole('checkbox', { name: 'Group by shared words' });
+    const view = page.locator('[data-test~="skill-view"]');
+    await expect(toggle).not.toBeChecked();
+    await expect(names).toHaveText(['alpha-review', 'build-cache', 'build-scan', 'commits']);
+    await expect(headers).toHaveCount(0);
+
+    await toggle.check({ force: true });
+    await expect(headers).toHaveText(['build · 2', 'Other · 2']);
+    for (const header of await headers.all()) await expect(header).toHaveAttribute('aria-expanded', 'true');
+    await expect(names).toHaveText(['build-cache', 'build-scan', 'alpha-review', 'commits']);
+    await expect(page.locator('[data-test~="header"]')).toHaveText(`${repository.split('/').at(-1)} · 4 skills`);
+    await expect(view.getByRole('heading', { level: 2 })).toHaveText('alpha-review');
+
+    await headers.filter({ hasText: 'build' }).click();
+    await expect(headers.filter({ hasText: 'build' })).toHaveAttribute('aria-expanded', 'false');
+    await expect(headers).toHaveText(['build · 2', 'Other · 2']);
+    await expect(names).toHaveText(['alpha-review', 'commits']);
+    await headers.filter({ hasText: 'build' }).click();
+    await expect(names).toHaveText(['build-cache', 'build-scan', 'alpha-review', 'commits']);
+
+    await page.getByLabel('Filter').fill('CACHE');
+    await expect(headers).toHaveText(['build · 1']);
+    await expect(names).toHaveText(['build-cache']);
+    await expect(view.getByRole('heading', { level: 2 })).toHaveText('build-cache');
+    await page.getByLabel('Filter').fill('no such skill');
+    await expect(headers).toHaveCount(0);
+    await expect(page.locator('[data-test~="no-match"]')).toHaveText('No skills match “no such skill”');
+    await page.getByLabel('Filter').fill('');
+
+    await headers.filter({ hasText: 'Other' }).click();
+    await expect(names).toHaveText(['build-cache', 'build-scan']);
+    await page.getByLabel('Repository').press('Enter');
+    await expect(toggle).toBeChecked();
+    for (const header of await headers.all()) await expect(header).toHaveAttribute('aria-expanded', 'true');
+    await expect(names).toHaveText(['build-cache', 'build-scan', 'alpha-review', 'commits']);
+
+    await toggle.uncheck({ force: true });
+    await expect(headers).toHaveCount(0);
+    await expect(names).toHaveText(['alpha-review', 'build-cache', 'build-scan', 'commits']);
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
