@@ -7,9 +7,11 @@ import Island, { Content, Header } from '@jetbrains/ring-ui-built/components/isl
 import Link from '@jetbrains/ring-ui-built/components/link/link';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
 import Text from '@jetbrains/ring-ui-built/components/text/text';
+import Toggle from '@jetbrains/ring-ui-built/components/toggle/toggle';
 import { useState, type FormEvent } from 'react';
-import { scanRepository, type WebScan } from './api.ts';
+import { scanRepository, type WebScan, type WebSkill } from './api.ts';
 import { matching } from './filter.ts';
+import { groups } from './group.ts';
 import { SkillView } from './SkillView.tsx';
 
 export function App() {
@@ -19,6 +21,9 @@ export function App() {
   const [error, setError] = useState<string>();
   const [selected, setSelected] = useState<string>();
   const [filter, setFilter] = useState('');
+  const [grouped, setGrouped] = useState(false);
+  // The collapsed groups, by word; Other is ''.
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -28,7 +33,8 @@ export function App() {
       const scanned = await scanRepository(input);
       setResult(scanned);
       setFilter('');
-      setSelected(scanned.skills[0]?.id);
+      setCollapsed(new Set());
+      setSelected(inOrder(scanned.skills)[0]?.id);
     } catch (failure) {
       setResult(undefined);
       setError(failure instanceof Error ? failure.message : String(failure));
@@ -37,14 +43,32 @@ export function App() {
     }
   }
 
+  // The skills in the order the list shows them, so that "the first" is the first row.
+  function inOrder(skills: WebSkill[]): WebSkill[] {
+    return grouped ? groups(skills).flatMap((group) => group.skills) : skills;
+  }
+
   // A skill the filter hides is no longer selected: the first match is.
   function changeFilter(value: string) {
     setFilter(value);
     const matches = matching(result?.skills ?? [], value);
-    if (!matches.some((candidate) => candidate.id === selected)) setSelected(matches[0]?.id);
+    if (!matches.some((candidate) => candidate.id === selected)) setSelected(inOrder(matches)[0]?.id);
+  }
+
+  function toggleGroup(key: string) {
+    const next = new Set(collapsed);
+    if (!next.delete(key)) next.add(key);
+    setCollapsed(next);
   }
 
   const shown = result ? matching(result.skills, filter) : [];
+  // Grouped over every skill, so that the groups stay put while filtering; a group with no match is hidden.
+  const shownGroups =
+    grouped && result
+      ? groups(result.skills)
+          .map((group) => ({ ...group, skills: group.skills.filter((item) => shown.includes(item)) }))
+          .filter((group) => group.skills.length > 0)
+      : [];
   const skill = shown.find((candidate) => candidate.id === selected);
   const count = result && `${result.skills.length} ${result.skills.length === 1 ? 'skill' : 'skills'}`;
 
@@ -105,23 +129,35 @@ export function App() {
                     No skills match “{filter.trim()}”
                   </Text>
                 )}
-                <ul data-test="skills">
-                  {shown.map((item) => (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        className={item.id === selected ? 'atlas-skill atlas-skill_selected' : 'atlas-skill'}
-                        aria-pressed={item.id === selected}
-                        onClick={() => setSelected(item.id)}
-                        data-test="skill"
-                      >
-                        <span className="atlas-skill-name">{item.name}</span>
-                        {item.summary && <Text info>{item.summary}</Text>}
-                        {item.copies.length > 0 && <Text info size={Text.Size.S}>also in {item.copies.join(', ')}</Text>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <div className="atlas-group-toggle">
+                  <Toggle checked={grouped} onChange={(event) => setGrouped(event.target.checked)} data-test="group-toggle">
+                    Group by shared words
+                  </Toggle>
+                </div>
+                {grouped ? (
+                  <ul data-test="groups">
+                    {shownGroups.map((group) => {
+                      const key = group.word ?? '';
+                      const expanded = !collapsed.has(key);
+                      return (
+                        <li key={key}>
+                          <button
+                            type="button"
+                            className="atlas-group"
+                            aria-expanded={expanded}
+                            onClick={() => toggleGroup(key)}
+                            data-test="group"
+                          >
+                            {group.word ?? 'Other'} · {group.skills.length}
+                          </button>
+                          {expanded && <SkillList skills={group.skills} selected={selected} select={setSelected} />}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <SkillList skills={shown} selected={selected} select={setSelected} />
+                )}
               </Content>
             </Island>
             {skill && <SkillView skill={skill} />}
@@ -129,5 +165,27 @@ export function App() {
         </>
       )}
     </main>
+  );
+}
+
+function SkillList({ skills, selected, select }: { skills: WebSkill[]; selected?: string; select: (id: string) => void }) {
+  return (
+    <ul data-test="skills">
+      {skills.map((item) => (
+        <li key={item.id}>
+          <button
+            type="button"
+            className={item.id === selected ? 'atlas-skill atlas-skill_selected' : 'atlas-skill'}
+            aria-pressed={item.id === selected}
+            onClick={() => select(item.id)}
+            data-test="skill"
+          >
+            <span className="atlas-skill-name">{item.name}</span>
+            {item.summary && <Text info>{item.summary}</Text>}
+            {item.copies.length > 0 && <Text info size={Text.Size.S}>also in {item.copies.join(', ')}</Text>}
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
