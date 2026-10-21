@@ -3,7 +3,7 @@
 // where skills live are yours to add.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -91,4 +91,42 @@ test('rate limit → a message that asks for GITHUB_TOKEN', async () => {
   await assert.rejects(openGitHub('https://github.com/JetBrains/MPS', { fetch: limited }), {
     message: 'GitHub rate limit reached; set GITHUB_TOKEN',
   });
+});
+
+test('copies: the same name in other agents\' folders → one skill, also in the other paths', async (t) => {
+  const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-copies-'));
+  t.after(() => rmSync(repository, { recursive: true, force: true }));
+  const skill = (path: string, name: string, description: string) => {
+    mkdirSync(join(repository, path), { recursive: true });
+    writeFileSync(join(repository, path, 'SKILL.md'), `---\nname: ${name}\ndescription: ${description}\n---\n`);
+  };
+  skill('.claude/skills/commits', 'commits', 'Write commit messages.');
+  skill('.github/skills/commits', 'commits', 'Write commit messages.');
+  skill('agent/skills/git-commits', 'commits', 'Write commit messages.');
+  skill('.agents/skills/alpha', 'alpha', 'An alpha skill.');
+  // Not copies: the same name in the same agent's folder, or outside the agents' folders.
+  skill('.agents/skills/review-a', 'review', 'Review the first way.');
+  skill('.agents/skills/review-b', 'review', 'Review the second way.');
+  skill('docs/alpha', 'alpha', 'Another alpha.');
+
+  const root = pathToFileURL(repository).href;
+  const scanned = await atlas(['scan', repository]);
+  assert.equal(scanned.code, 0, scanned.stderr);
+  assert.equal(
+    scanned.stdout,
+    [
+      `${repository.split('/').at(-1)} · 5 skills`,
+      'alpha — An alpha skill.',
+      `  ${root}/.agents/skills/alpha/SKILL.md`,
+      'alpha — Another alpha.',
+      `  ${root}/docs/alpha/SKILL.md`,
+      'commits — Write commit messages.',
+      `  ${root}/.claude/skills/commits/SKILL.md`,
+      '  also in .github/skills/commits/SKILL.md, agent/skills/git-commits/SKILL.md',
+      'review — Review the first way.',
+      `  ${root}/.agents/skills/review-a/SKILL.md`,
+      'review — Review the second way.',
+      `  ${root}/.agents/skills/review-b/SKILL.md`,
+    ].join('\n'),
+  );
 });

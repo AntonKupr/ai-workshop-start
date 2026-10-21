@@ -129,6 +129,24 @@ test('the other front matter, and a SKILL.md whose HTML would run: sanitized', a
   }
 });
 
+test('the same skill in other agents\' folders: listed once, also in the other paths', async ({ page }) => {
+  const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-copies-'));
+  try {
+    for (const path of ['.claude/skills/commits', '.github/skills/commits', '.agents/skills/alpha']) {
+      mkdirSync(join(repository, path), { recursive: true });
+      writeFileSync(join(repository, path, 'SKILL.md'), `---\nname: ${path.split('/').at(-1)}\ndescription: The ${path.split('/').at(-1)} skill.\n---\n`);
+    }
+    await scan(page, repository);
+    await expect(page.locator('[data-test~="header"]')).toHaveText(`${repository.split('/').at(-1)} · 2 skills`);
+    await expect(page.locator('[data-test~="skill"]')).toHaveText([
+      'alphaThe alpha skill.',
+      'commitsThe commits skill.also in .github/skills/commits/SKILL.md',
+    ]);
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
+
 test('a toggle groups the list by the words the names share; a group collapses; the filter applies inside', async ({ page }) => {
   const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-groups-'));
   try {
