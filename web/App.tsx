@@ -34,7 +34,7 @@ export function App() {
       setResult(scanned);
       setFilter('');
       setCollapsed(new Set());
-      setSelected(scanned.skills[0]?.id);
+      setSelected(inOrder(scanned.skills)[0]?.id);
     } catch (failure) {
       setResult(undefined);
       setError(failure instanceof Error ? failure.message : String(failure));
@@ -43,11 +43,16 @@ export function App() {
     }
   }
 
+  // The skills in the order the list shows them, so that "the first" is the first row.
+  function inOrder(skills: WebSkill[]): WebSkill[] {
+    return grouped ? groups(skills).flatMap((group) => group.skills) : skills;
+  }
+
   // A skill the filter hides is no longer selected: the first match is.
   function changeFilter(value: string) {
     setFilter(value);
     const matches = matching(result?.skills ?? [], value);
-    if (!matches.some((candidate) => candidate.id === selected)) setSelected(matches[0]?.id);
+    if (!matches.some((candidate) => candidate.id === selected)) setSelected(inOrder(matches)[0]?.id);
   }
 
   function toggleGroup(key: string) {

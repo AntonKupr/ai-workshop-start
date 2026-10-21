@@ -8,11 +8,13 @@ Built with **JetBrains Ring UI**; `npm run build` first. *Nothing is stored*.
   the description's *first sentence*, `also in <paths>` for copies
 - The selected skill's **SKILL.md**: name, description, the other front matter,
   the body **rendered as Markdown**, the link pinned to the *scanned commit*
-- The first skill is selected after a scan; a click selects another
+- The first skill *as the list shows it*, grouped or not, is selected after a scan; a click
+  selects another
 - A **filter** field above the list: only the skills whose name or description contains it,
   *in any case*, the spaces around it ignored; the *whole* description, not only the first
   sentence the list shows; none → `No skills match “<filter>”`. The header still counts every skill.
-  A skill the filter hides is no longer selected: the *first match* is. A scan clears the filter
+  A skill the filter hides is no longer selected: the *first match* in the list is. A scan clears
+  the filter
 - A **Group by shared words** toggle under the filter, *off* by default, kept across scans: the list
   in groups by a word the skills' **names** share (split at `-`, `_`, `.` and spaces, in any case,
   two letters or more). The word the most skills share makes a group, then the next among the rest,

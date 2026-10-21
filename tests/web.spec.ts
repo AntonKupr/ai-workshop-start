@@ -167,6 +167,11 @@ test('a toggle groups the list by the words the names share; a group collapses; 
     await expect(headers).toHaveCount(0);
     await expect(page.locator('[data-test~="no-match"]')).toHaveText('No skills match “no such skill”');
     await page.getByLabel('Filter').fill('');
+    await names.getByText('commits').click();
+    await page.getByLabel('Filter').fill('a');
+    await expect(names).toHaveText(['build-cache', 'build-scan', 'alpha-review']);
+    await expect(view.getByRole('heading', { level: 2 })).toHaveText('build-cache');
+    await page.getByLabel('Filter').fill('');
 
     await headers.filter({ hasText: 'Other' }).click();
     await expect(names).toHaveText(['build-cache', 'build-scan']);
@@ -174,6 +179,7 @@ test('a toggle groups the list by the words the names share; a group collapses; 
     await expect(toggle).toBeChecked();
     for (const header of await headers.all()) await expect(header).toHaveAttribute('aria-expanded', 'true');
     await expect(names).toHaveText(['build-cache', 'build-scan', 'alpha-review', 'commits']);
+    await expect(view.getByRole('heading', { level: 2 })).toHaveText('build-cache');
 
     await toggle.uncheck({ force: true });
     await expect(headers).toHaveCount(0);
