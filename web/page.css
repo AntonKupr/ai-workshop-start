@@ -37,16 +37,18 @@ body {
 }
 
 /* The list stays beside the SKILL.md and scrolls on its own, the filter on top.
-   It ends 16px above the window's bottom from wherever it starts: --atlas-list-top, set by App.tsx,
-   is where the columns start, under the header until the page scrolls and the list sticks at 16px. */
+   It ends a gap above the window's bottom from wherever it starts: --atlas-list-top, set by App.tsx,
+   is where the columns start, under the header until the page scrolls and the list sticks at the gap. */
 .atlas-list {
+  --atlas-gap: calc(2 * var(--ring-unit, 8px));
   position: sticky;
-  top: 16px;
+  top: var(--atlas-gap);
   box-sizing: border-box;
-  max-height: calc(100vh - max(var(--atlas-list-top, 16px), 16px) - 16px);
+  max-height: calc(100vh - max(var(--atlas-list-top, var(--atlas-gap)), var(--atlas-gap)) - var(--atlas-gap));
 }
 
-/* Over the content's top padding too, so nothing shows above it when the list scrolls. */
+/* Over the content's top padding too, so nothing shows above it when the list scrolls.
+   2 * --ring-unit is Ring UI's default padding-top of .ring-island-scrollableWrapper: 0 with withoutPaddings. */
 .atlas-filter {
   position: sticky;
   z-index: 1;
