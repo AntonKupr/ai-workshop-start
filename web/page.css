@@ -31,7 +31,8 @@ body {
 
 .atlas-list ul,
 .atlas ul[data-test='skills'],
-.atlas ul[data-test='groups'] {
+.atlas ul[data-test='groups'],
+.atlas ul[data-test='repositories'] {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -152,4 +153,13 @@ body {
   overflow: auto;
   padding: 8px;
   background: var(--ring-sidebar-background-color, #f7f9fa);
+}
+
+.atlas-repository {
+  padding: 12px 8px 4px;
+  font-weight: 600;
+}
+
+.atlas ul[data-test='repositories'] > li:first-child > .atlas-repository {
+  padding-top: 0;
 }

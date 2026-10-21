@@ -8,14 +8,14 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { after, before, test } from 'node:test';
 import { startServer } from '../src/web/server.ts';
-import type { WebScan } from '../web/api.ts';
-import { atlas, CLI, EXAMPLE_COMMIT, FIXTURE, open } from './helpers.ts';
+import type { WebOrganizationScan, WebScan } from '../web/api.ts';
+import { atlas, CLI, EXAMPLE_COMMIT, FIXTURE, open, openOrganization, TOOLS_COMMIT } from './helpers.ts';
 
 let server: Awaited<ReturnType<typeof startServer>>;
 let page: string;
 before(async () => {
   page = mkdtempSync(join(tmpdir(), 'skill-atlas-page-'));
-  server = await startServer({ port: 0, open, page });
+  server = await startServer({ port: 0, open, openOrganization, page });
 });
 after(async () => {
   await server.close();
@@ -89,6 +89,38 @@ test('GET /api/scan: an unreachable repository → 400 and the CLI message', asy
   assert.deepEqual(empty, { status: 400, body: { error: 'Enter a GitHub URL or a directory' } });
 });
 
+async function scanOrganization(organization: string) {
+  const response = await fetch(`${server.url}/api/scan-organization?organization=${encodeURIComponent(organization)}`);
+  return { status: response.status, body: (await response.json()) as WebOrganizationScan & { error: string } };
+}
+
+test('GET /api/scan-organization: how many repositories, each one with skills, its skills linked, and the warnings', async () => {
+  const { status, body } = await scanOrganization(' https://github.com/JetBrains ');
+  assert.equal(status, 200);
+  assert.deepEqual(body.organization, { id: 'JetBrains', url: 'https://github.com/JetBrains' });
+  assert.equal(body.repositories, 4);
+  assert.deepEqual(
+    body.results.map(({ repository, skills }) => [repository.id, skills.map((skill) => [skill.name, skill.summary, skill.link])]),
+    [
+      [
+        'JetBrains/example',
+        [['commits', 'Write commit messages the way this repository does.', `https://github.com/JetBrains/example/blob/${EXAMPLE_COMMIT}/.claude/skills/commits/SKILL.md`]],
+      ],
+      ['JetBrains/tools', [['release', 'Cut a release.', `https://github.com/JetBrains/tools/blob/${TOOLS_COMMIT}/skills/release/SKILL.md`]]],
+    ],
+  );
+  assert.equal(body.results[1].skills[0].body, '# Release');
+  assert.deepEqual(body.warnings, [(await atlas(['scan-org', 'JetBrains'])).stderr.replace(/^warning: /, '')]);
+});
+
+test('GET /api/scan-organization: a clear message → 400', async () => {
+  assert.deepEqual(await scanOrganization(' '), { status: 400, body: { error: 'Enter a GitHub organization' } });
+  assert.deepEqual(await scanOrganization('a/b/c'), { status: 400, body: { error: 'Not a GitHub organization: a/b/c' } });
+  const offline = await scanOrganization('not-answered');
+  assert.equal(offline.status, 400);
+  assert.equal(offline.body.error, 'Cannot reach GitHub: not recorded: https://api.github.com/orgs/not-answered');
+});
+
 test('the page: index.html, or a message to build it', async (t) => {
   const missing = await fetch(server.url);
   assert.equal(missing.status, 503);
@@ -99,7 +131,7 @@ test('the page: index.html, or a message to build it', async (t) => {
   mkdirSync(join(built, 'page'));
   writeFileSync(join(built, 'page/index.html'), '<title>Skill Atlas</title>');
   writeFileSync(join(built, 'secret.txt'), 'not part of the page');
-  const other = await startServer({ port: 0, open, page: join(built, 'page') });
+  const other = await startServer({ port: 0, open, openOrganization, page: join(built, 'page') });
   t.after(() => other.close());
   const index = await fetch(other.url);
   assert.equal(index.status, 200);

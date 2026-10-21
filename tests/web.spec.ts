@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { EXAMPLE_COMMIT, FIXTURE } from './helpers.ts';
+import { EXAMPLE_COMMIT, FIXTURE, TOOLS_COMMIT } from './helpers.ts';
 
 async function scan(page: Page, input: string, submit: 'enter' | 'click' = 'enter') {
   await page.goto('/');
@@ -253,4 +253,63 @@ test('a toggle groups the list by the words the names share; a group collapses; 
   } finally {
     rmSync(repository, { recursive: true, force: true });
   }
+});
+
+test('an organization: every repository with skills, its skills under it, and the warnings', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Organization').fill('JetBrains');
+  await page.getByLabel('Organization').press('Enter');
+  await expect(page.locator('[data-test~="header"]')).toHaveText('JetBrains · 4 repositories · 2 skills');
+  await expect(page.locator('[data-test~="repository-group"]')).toHaveText(['JetBrains/example', 'JetBrains/tools']);
+  await expect(page.locator('[data-test="skill"] .atlas-skill-name')).toHaveText(['commits', 'release']);
+  await expect(page.locator('[data-test~="warnings"]')).toContainText(
+    'JetBrains/not-answered: Cannot reach GitHub: not recorded: https://api.github.com/repos/JetBrains/not-answered',
+  );
+
+  const view = page.locator('[data-test~="skill-view"]');
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('commits');
+  await page.locator('[data-test~="skill"]').filter({ hasText: 'release' }).click();
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('release');
+  await expect(view.locator('[data-test~="markdown"]').locator('h1')).toHaveText('Release');
+  await expect(view.locator('[data-test~="link"]')).toHaveAttribute(
+    'href',
+    `https://github.com/JetBrains/tools/blob/${TOOLS_COMMIT}/skills/release/SKILL.md`,
+  );
+});
+
+test('an organization that cannot be scanned → the message in an error banner; Look up scans too', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Organization').fill('a/b/c');
+  await page.getByRole('button', { name: 'Look up' }).click();
+  await expect(page.locator('[data-test~="error"]')).toContainText('Not a GitHub organization: a/b/c');
+  await expect(page.locator('[data-test~="header"]')).toHaveCount(0);
+});
+
+test('an organization: the filter and the groups inside each repository; one with no match is hidden', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Organization').fill('JetBrains');
+  await page.getByLabel('Organization').press('Enter');
+  const repositories = page.locator('[data-test~="repository-group"]');
+  const names = page.locator('[data-test="skill"] .atlas-skill-name');
+  const headers = page.locator('[data-test="group"]');
+  const view = page.locator('[data-test~="skill-view"]');
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('commits');
+
+  await page.getByLabel('Filter').fill('TAG IT');
+  await expect(repositories).toHaveText(['JetBrains/tools']);
+  await expect(names).toHaveText(['release']);
+  await expect(view.getByRole('heading', { level: 2 })).toHaveText('release');
+  await expect(page.locator('[data-test~="header"]')).toHaveText('JetBrains · 4 repositories · 2 skills');
+  await page.getByLabel('Filter').fill('no such skill');
+  await expect(repositories).toHaveCount(0);
+  await expect(page.locator('[data-test~="no-match"]')).toHaveText('No skills match “no such skill”');
+  await page.getByLabel('Filter').fill('');
+
+  await page.getByRole('checkbox', { name: 'Group by shared words' }).check({ force: true });
+  await expect(repositories).toHaveText(['JetBrains/example', 'JetBrains/tools']);
+  await expect(headers).toHaveText(['Other · 1', 'Other · 1']);
+  await headers.first().click();
+  await expect(headers.first()).toHaveAttribute('aria-expanded', 'false');
+  await expect(headers.last()).toHaveAttribute('aria-expanded', 'true');
+  await expect(names).toHaveText(['release']);
 });

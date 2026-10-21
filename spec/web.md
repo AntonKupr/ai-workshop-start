@@ -11,6 +11,10 @@ Built with **JetBrains Ring UI**; `npm run build` first. *Nothing is stored*.
   the selected one *marked* on its left, each description's first sentence in *two lines* at most
 - The selected skill's **SKILL.md**: name, description, the other front matter,
   the body **rendered as Markdown**, the link pinned to the *scanned commit*
+- A second **field** for a GitHub organization; *Look up* or Enter scans every repository:
+  `<organization> · N repositories · M skills`, then the skills of each repository
+  with skills, under its `<owner>/<repo>`, sorted by id. The filter and the groups apply
+  inside each repository, as they do for one; a repository with no match is hidden
 - The first skill *as the list shows it*, grouped or not, is selected after a scan; a click
   selects another
 - A **filter** field above the list: only the skills whose name or description contains it,
@@ -31,3 +35,6 @@ Built with **JetBrains Ring UI**; `npm run build` first. *Nothing is stored*.
 ## API
 `GET /api/scan?input=<GitHub URL | directory>` → `{ repository, skills, warnings }`;
 each skill with its `link` and `summary`. A clear message → `400 { error }`.
+`GET /api/scan-organization?organization=<name | GitHub URL>` →
+`{ organization, repositories, results, warnings }`: `repositories`, how many were scanned;
+`results`, each repository with skills and its skills, as above. A clear message → `400 { error }`.
