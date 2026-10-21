@@ -93,6 +93,29 @@ test('rate limit → a message that asks for GITHUB_TOKEN', async () => {
   });
 });
 
+test('copies: a malformed copy that sorts first → the well-formed one keeps the skill, also in the malformed path', async (t) => {
+  const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-malformed-copy-'));
+  t.after(() => rmSync(repository, { recursive: true, force: true }));
+  mkdirSync(join(repository, '.agents/skills/commits'), { recursive: true });
+  writeFileSync(join(repository, '.agents/skills/commits/SKILL.md'), '---\nname: [bad\n---\n');
+  mkdirSync(join(repository, '.claude/skills/commits'), { recursive: true });
+  writeFileSync(join(repository, '.claude/skills/commits/SKILL.md'), '---\nname: commits\ndescription: Write commit messages.\n---\n');
+
+  const root = pathToFileURL(repository).href;
+  const scanned = await atlas(['scan', repository]);
+  assert.equal(scanned.code, 0, scanned.stderr);
+  assert.equal(
+    scanned.stdout,
+    [
+      `${repository.split('/').at(-1)} · 1 skill`,
+      'commits — Write commit messages.',
+      `  ${root}/.claude/skills/commits/SKILL.md`,
+      '  also in .agents/skills/commits/SKILL.md',
+    ].join('\n'),
+  );
+  assert.match(scanned.stderr, /\.agents\/skills\/commits\/SKILL\.md: malformed front matter/);
+});
+
 test('copies: the same name in other agents\' folders → one skill, also in the other paths', async (t) => {
   const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-copies-'));
   t.after(() => rmSync(repository, { recursive: true, force: true }));

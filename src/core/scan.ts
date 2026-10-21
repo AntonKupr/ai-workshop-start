@@ -20,9 +20,10 @@ export async function scan(source: Source): Promise<ScanResult> {
   const files = findSkills(source.paths, source.repository.name);
   // The files are read at the same time: on GitHub, each one is a request.
   const results = await Promise.all(files.map((file) => readSkill(source, file)));
+  const malformed = new Set(results.flatMap((result) => (result.skill && result.warning ? [result.skill.path] : [])));
   return {
     repository: source.repository,
-    skills: sortSkills(collapseCopies(results.flatMap((result) => (result.skill ? [result.skill] : [])))),
+    skills: sortSkills(collapseCopies(results.flatMap((result) => (result.skill ? [result.skill] : [])), malformed)),
     warnings: [...source.warnings, ...results.flatMap((result) => (result.warning ? [result.warning] : []))],
   };
 }

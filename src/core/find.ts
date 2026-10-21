@@ -19,12 +19,15 @@ export function findSkills(paths: string[], repositoryName: string): SkillFile[]
 
 /**
  * The same skill, by name, in other agents' folders is one skill: the first path keeps it,
- * the others are its copies. The same name twice in one agent's folder, or outside them, is two skills.
+ * the others are its copies, in path order. A malformed one (its path in `malformed`) is never the first:
+ * its name is only its directory's. The same name twice in one agent's folder, or outside them, is two skills.
  */
-export function collapseCopies(skills: Skill[]): Skill[] {
+export function collapseCopies(skills: Skill[], malformed: ReadonlySet<string> = new Set()): Skill[] {
   const result: Skill[] = [];
   const groups = new Map<string, { skill: Skill; roots: Set<string> }[]>();
-  for (const skill of [...skills].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))) {
+  const rank = (skill: Skill) => (malformed.has(skill.path) ? 1 : 0);
+  const ordered = [...skills].sort((a, b) => rank(a) - rank(b) || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  for (const skill of ordered) {
     const root = SKILL_ROOTS.find((candidate) => skill.path.startsWith(`${candidate}/`));
     if (!root) {
       result.push(skill);
@@ -35,6 +38,7 @@ export function collapseCopies(skills: Skill[]): Skill[] {
     const group = named.find((candidate) => !candidate.roots.has(root));
     if (group) {
       group.skill.copies.push(skill.path);
+      group.skill.copies.sort();
       group.roots.add(root);
     } else {
       const primary = { ...skill, copies: [...skill.copies] };

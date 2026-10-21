@@ -48,3 +48,15 @@ test('copies: the skills passed in are not changed', () => {
   collapseCopies(skills);
   assert.deepEqual(skills, before);
 });
+
+test('copies: a malformed one is never the first; the first well-formed path keeps the skill, the others in path order', () => {
+  const skills = [
+    skill('.agents/skills/commits/SKILL.md', 'commits', ''),
+    skill('.claude/skills/commits/SKILL.md', 'commits'),
+    skill('.github/skills/commits/SKILL.md', 'commits'),
+  ];
+  assert.deepEqual(
+    collapseCopies(skills, new Set(['.agents/skills/commits/SKILL.md'])).map((item) => [item.path, item.copies]),
+    [['.claude/skills/commits/SKILL.md', ['.agents/skills/commits/SKILL.md', '.github/skills/commits/SKILL.md']]],
+  );
+});
