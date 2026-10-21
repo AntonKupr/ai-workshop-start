@@ -1,6 +1,6 @@
 ---
 name: promotion-post-writer
-description: Read the code base of the Skill Atlas web application, write a long promotion post that sells it, and post it to Slack
+description: Read the code base of the Skill Atlas web application, write a concise promotion post of at most 8 sentences that sells it, and post it to Slack
 ---
 
 # Promotion post writer
@@ -10,7 +10,7 @@ description: Read the code base of the Skill Atlas web application, write a long
 Use when the user asks for a promotion, launch, marketing or "sell it" post about this
 web application — the Skill Atlas page served by `./skill-atlas web` and described in
 `spec/web.md`. Not for release notes or a status report: those are facts about a change,
-this is a post that sells the product. The finished post is posted to Slack.
+this is a short post that sells the product. The finished post is posted to Slack.
 
 ## Checklist
 
@@ -34,8 +34,9 @@ this is a post that sells the product. The finished post is posted to Slack.
    `fixture/` or `.agents` so the numbers quoted in the post are real.
 4. Pick the audience from the request; default to the developers and team leads who
    maintain agent skills in their repositories.
-5. Write the post in the structure of Output, long form, then read it once against the
-   notes from step 1 and cut every claim that is not backed by them.
+5. Write the post in the structure of Output, then count its sentences: at most eight.
+   Read it once against the notes from step 1 and cut every claim that is not backed by
+   them; if it is still over eight sentences, drop the weakest feature, never a fact.
 6. Post the finished text to Slack with the `SLACK_BOT_TOKEN` from the environment
    variables:
 
@@ -68,7 +69,9 @@ this is a post that sells the product. The finished post is posted to Slack.
   no "revolutionary", no emoji walls, at most one emoji per heading if the user asks
   for a social post.
 - Commands are copy-pasteable and correct in a fenced block, exactly as the README
-  spells them.
+  spells them. The fenced block is not a sentence and does not count.
+- At most eight sentences in the whole post, the headline included. One sentence per
+  bullet; no semicolon chains to pack two sentences into one.
 - Post to the `akupr-channel` channel (channel id `C0CAVCXUD54`) of the "AI Workshop at
   JetBrains" workspace (`aiworkshopatjetbrains.slack.com`) only; never publish the post
   anywhere else.
@@ -80,23 +83,22 @@ this is a post that sells the product. The finished post is posted to Slack.
 
 ## Output
 
-A Markdown post of about 400–700 words, in this order:
+A short Markdown post of **at most eight sentences**, in this order:
 
-1. **Headline** — one line, the product and its promise.
-2. **Hook** — two or three sentences on the problem: skills are scattered across
-   `.agents`, `.claude`, `.github` and `agent` folders, copied between them, and nobody
-   knows what the repository already has.
-3. **What it is** — two or three sentences on the purpose: point Skill Atlas at a GitHub
+1. **Headline** — one line, the product and its promise; it counts as a sentence.
+2. **Hook** — one sentence on the problem: skills are scattered across `.agents`,
+   `.claude`, `.github` and `agent` folders, copied between them, and nobody knows what
+   the repository already has.
+3. **What it is** — one or two sentences on the purpose: point Skill Atlas at a GitHub
    URL or a local directory and get every `SKILL.md` with its name, description and a
    link pinned to the scanned commit.
-4. **What you get** — four to six bullets, each a feature with its payoff: the scan with
-   no clone and under five seconds on a repository the size of intellij-community; the
-   list with the rendered `SKILL.md` beside it; the filter over names and descriptions in
-   any case; **Group by shared words**, which finds the families in your skill names;
-   copies folded into one skill so the list is not noise; warnings that never stop a scan.
-5. **Why now / why this** — three or four selling sentences: Ring UI, the same scan in the
-   page and in the terminal, the `GET /api/scan` API for your own tooling, nothing stored,
-   nothing executed.
+4. **What you get** — two or three bullets, one sentence each, the best features with
+   their payoff: the scan with no clone and under five seconds on a repository the size
+   of intellij-community, the list with the rendered `SKILL.md` beside it, the filter and
+   **Group by shared words** that find the families in your skill names, copies folded
+   into one skill.
+5. **Why this** — one selling sentence, picking what fits: Ring UI, the same scan in the
+   page and in the terminal, the `GET /api/scan` API, nothing stored, nothing executed.
 6. **Try it** — the commands, in a fenced block:
 
    ```console
@@ -105,7 +107,7 @@ A Markdown post of about 400–700 words, in this order:
    Skill Atlas at http://localhost:4173
    ```
 
-7. **Close** — one or two sentences and a call to action pointing at the repository.
+7. **Close** — one sentence, a call to action pointing at the repository.
 
 The same post goes to Slack as a single message, converted to mrkdwn.
 
