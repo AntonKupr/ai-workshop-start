@@ -20,8 +20,10 @@ what happened in the repository since yesterday.
 3. Collect created branches: list remote branches whose first commit date is in the
    window, e.g.
    `git for-each-ref --sort=-committerdate --format='%(refname:short) %(committerdate:iso8601-strict)' refs/remotes/origin`.
+   Build the branch link as `https://github.com/<nameWithOwner>/tree/<branch>`.
 4. Collect pushed commits in the window across branches, e.g.
-   `git log --all --since="$SINCE" --date=iso-strict --pretty='%h %ad %an %s'`.
+   `git log --all --since="$SINCE" --date=iso-strict --pretty='%H %h %ad %an %s'`.
+   Build the commit link as `https://github.com/<nameWithOwner>/commit/<full-sha>`.
 5. Collect created PRs: `gh pr list --state all --limit 100 --json number,title,url,author,createdAt,mergedAt`
    and keep the ones with `createdAt >= $SINCE`.
 6. Collect merged PRs: from the same output keep the ones with `mergedAt >= $SINCE`.
@@ -53,6 +55,14 @@ what happened in the repository since yesterday.
 - Post to the `akupr-channel` channel (channel id `C0CAVCXUD54`) of the
   "AI Workshop at JetBrains" workspace (`aiworkshopatjetbrains.slack.com`) only.
 - Send one message per run; do not split the report across messages.
+- Every GitHub object (commit, branch, PR, issue) is always posted as a clickable
+  link in Slack mrkdwn format `<url|label>`; never post a bare number, sha, or
+  branch name without a link.
+- Links use the real URL: `url` from `gh` for PRs and issues,
+  `https://github.com/<nameWithOwner>/commit/<full-sha>` for commits,
+  `https://github.com/<nameWithOwner>/tree/<branch>` for branches.
+- Every group title and every list item starts with an emoji, using the fixed set
+  from Output; do not invent new emojis per run.
 - Empty sections are listed as `none` instead of being dropped, so the reader
   sees what was checked.
 - Bots and automation commits are included but marked, so human work stays
@@ -61,10 +71,27 @@ what happened in the repository since yesterday.
 ## Output
 
 A single Slack message starting with
-`Status update <repo> — since <YYYY-MM-DD> 00:00 UTC`, followed by the sections
-`Branches created`, `Commits pushed`, `PRs created`, `PRs merged`,
-`Issues created`, `Issues resolved`. Each entry is one short line with the
-author and a link (`#<number> <title> — <author> — <url>` for PRs and issues,
-`<sha> <subject> — <author>` for commits). Keep it readable in Slack: plain
-text, no tables, long lists truncated to the 10 most recent entries with a
-`+N more` line. Report the Slack message link or timestamp back to the user.
+`📊 Status update <repo> — since <YYYY-MM-DD> 00:00 UTC`, followed by the
+sections in this order, each with its emoji title:
+
+- `🌿 Branches created`
+- `📝 Commits pushed`
+- `🔀 PRs created`
+- `✅ PRs merged`
+- `🐛 Issues created`
+- `🎉 Issues resolved`
+
+Each entry is one short line that starts with the section emoji and links the
+GitHub object:
+
+- branches: `🌿 <https://github.com/<repo>/tree/<branch>|<branch>> — <author>`
+- commits: `📝 <https://github.com/<repo>/commit/<sha>|<short-sha>> <subject> — <author>`
+- PRs created: `🔀 <<url>|#<number> <title>> — <author>`
+- PRs merged: `✅ <<url>|#<number> <title>> — <author>`
+- issues created: `🐛 <<url>|#<number> <title>> — <author>`
+- issues resolved: `🎉 <<url>|#<number> <title>> — <author>`
+
+Empty sections read `🚫 none`, and bot entries are suffixed with `🤖`. Keep it
+readable in Slack: plain text, no tables, long lists truncated to the 10 most
+recent entries with a `➕ +N more` line. Report the Slack message link or
+timestamp back to the user.
