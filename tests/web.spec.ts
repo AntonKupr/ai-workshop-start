@@ -128,3 +128,47 @@ test('the other front matter, and a SKILL.md whose HTML would run: sanitized', a
     rmSync(repository, { recursive: true, force: true });
   }
 });
+
+test('the list: the filter as wide as the list, a divider between skills, the selected one marked, two lines of summary, its own scroll', async ({ page }) => {
+  const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-many-'));
+  try {
+    for (let index = 10; index < 40; index++) {
+      mkdirSync(join(repository, `.claude/skills/skill-${index}`), { recursive: true });
+      writeFileSync(
+        join(repository, `.claude/skills/skill-${index}/SKILL.md`),
+        ['---', `name: skill-${index}`, `description: ${'A very long first sentence that goes on and on '.repeat(6)}. The rest.`, '---', '# Body'].join('\n'),
+      );
+    }
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await scan(page, repository);
+    const skills = page.locator('[data-test="skill"]');
+    await expect(skills).toHaveCount(30);
+
+    const filter = await page.getByLabel('Filter').boundingBox();
+    const first = await skills.first().boundingBox();
+    expect(Math.abs(filter!.width - first!.width)).toBeLessThanOrEqual(2);
+
+    const items = page.locator('[data-test="skills"] > li');
+    expect(await items.nth(0).evaluate((item) => item.ownerDocument.defaultView!.getComputedStyle(item).borderTopWidth)).toBe('0px');
+    expect(await items.nth(1).evaluate((item) => item.ownerDocument.defaultView!.getComputedStyle(item).borderTopWidth)).toBe('1px');
+
+    const accent = (index: number) => skills.nth(index).evaluate((skill) => skill.ownerDocument.defaultView!.getComputedStyle(skill).borderLeftColor);
+    expect(await accent(0)).not.toBe(await accent(1));
+    expect(await accent(1)).toBe('rgba(0, 0, 0, 0)');
+
+    const summary = skills.first().locator('.atlas-skill-summary');
+    const lineHeight = await summary.evaluate((text) => parseFloat(text.ownerDocument.defaultView!.getComputedStyle(text).lineHeight));
+    expect((await summary.boundingBox())!.height).toBeLessThanOrEqual(2 * lineHeight + 1);
+
+    expect((await page.locator('.atlas-list').boundingBox())!.height).toBeLessThanOrEqual(800 - 32);
+    await skills.last().click();
+    await expect(skills.last()).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.getByLabel('Filter').evaluate((input) => {
+      const { x, y, width, height } = input.getBoundingClientRect();
+      return input.ownerDocument.elementFromPoint(x + width / 2, y + height / 2) === input;
+    })).toBe(true);
+    await expect(page.locator('[data-test~="skill-view"]').getByRole('heading', { level: 2 })).toHaveText('skill-39');
+  } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});

@@ -2,7 +2,7 @@
 import Banner from '@jetbrains/ring-ui-built/components/banner/banner';
 import Button from '@jetbrains/ring-ui-built/components/button/button';
 import Heading from '@jetbrains/ring-ui-built/components/heading/heading';
-import Input from '@jetbrains/ring-ui-built/components/input/input';
+import Input, { Size } from '@jetbrains/ring-ui-built/components/input/input';
 import Island, { Content, Header } from '@jetbrains/ring-ui-built/components/island/island';
 import Link from '@jetbrains/ring-ui-built/components/link/link';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
@@ -98,6 +98,7 @@ export function App() {
                   onChange={(event) => changeFilter(event.target.value)}
                   onClear={() => changeFilter('')}
                   data-test="filter"
+                  size={Size.FULL}
                   className="atlas-filter"
                 />
                 {shown.length === 0 && result.skills.length > 0 && (
@@ -116,7 +117,11 @@ export function App() {
                         data-test="skill"
                       >
                         <span className="atlas-skill-name">{item.name}</span>
-                        {item.summary && <Text info>{item.summary}</Text>}
+                        {item.summary && (
+                          <Text info className="atlas-skill-summary">
+                            {item.summary}
+                          </Text>
+                        )}
                         {item.copies.length > 0 && <Text info size={Text.Size.S}>also in {item.copies.join(', ')}</Text>}
                       </button>
                     </li>
