@@ -17,6 +17,7 @@ Built with **JetBrains Ring UI**; `npm run build` first. *Nothing is stored*.
   inside each repository, as they do for one; a repository with no match is hidden
 - The first skill *as the list shows it*, grouped or not, is selected after a scan; a click
   selects another
+- *No fade* over the bottom of the list or the SKILL.md, even when the list scrolls
 - A **filter** field above the list: only the skills whose name or description contains it,
   *in any case*, the spaces around it ignored; the *whole* description, not only the first
   sentence the list shows; none → `No skills match “<filter>”`. The header still counts every skill.

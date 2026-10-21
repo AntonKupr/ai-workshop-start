@@ -220,7 +220,8 @@ export function App() {
           <div className="atlas-columns" ref={columns}>
             <Island className="atlas-list">
               <Header border>Skills</Header>
-              <Content>
+              {/* No fade, even though the list scrolls: Ring UI may leave it stale, its islands share one frame scheduler */}
+              <Content fade={false}>
                 <Input
                   label="Filter"
                   placeholder="Name or description"

@@ -86,6 +86,42 @@ test('a filter: by name or description, any case; the selection follows; a scan 
   await expect(names).toHaveText(['code-style', 'commits', 'release-checklist']);
 });
 
+test('the list and the SKILL.md: never a fade over them', async ({ page }) => {
+  // Ring UI fades an island's bottom until a frame tells it nothing is below; every class an island's content
+  // ever had is recorded, then checked against the classes Ring UI's stylesheet draws a fade for.
+  await page.addInitScript(`
+    globalThis.classes = new Set();
+    new MutationObserver(() => {
+      for (const element of document.querySelectorAll('[data-test="ring-island-content"]')) {
+        for (const name of element.classList) globalThis.classes.add(name);
+      }
+    }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  `);
+  await scan(page, FIXTURE);
+  const names = page.locator('[data-test="skill"] .atlas-skill-name');
+  // Both islands, the list and the SKILL.md, are on screen and observed.
+  await expect(page.locator('[data-test="ring-island-content"]')).toHaveCount(2);
+  for (const [filter, count] of [['', 3], ['commits', 1], ['', 3], ['release', 1], ['no such skill', 0]] as const) {
+    await page.getByLabel('Filter').fill(filter);
+    await expect(names).toHaveCount(count);
+  }
+  // Without a match there is no SKILL.md: only the list's island is left, still observed.
+  await expect(page.locator('[data-test="ring-island-content"]')).toHaveCount(1);
+  // An island class whose ::before or ::after is a gradient: Ring UI's fades, whatever they are named.
+  const { fades, seen } = (await page.evaluate(`({
+    fades: [...document.styleSheets]
+      .flatMap((sheet) => [...sheet.cssRules])
+      .filter((rule) => rule instanceof CSSStyleRule && /^\\.ring-island-[\\w-]+:{1,2}(before|after)$/.test(rule.selectorText))
+      .filter((rule) => rule.style.cssText.includes('gradient'))
+      .map((rule) => rule.selectorText.replace(/^\\.|:.*$/g, '')),
+    seen: [...globalThis.classes],
+  })`)) as { fades: string[]; seen: string[] };
+  // The positive control: were Ring UI's fades renamed or restyled, this test would still find them.
+  expect(fades.length).toBeGreaterThan(0);
+  expect(seen).toContain('ring-island-content');
+  expect(seen.filter((name) => fades.includes(name))).toEqual([]);
+});
+
 test('an unreachable repository → the CLI message in an error banner', async ({ page }) => {
   await scan(page, join(FIXTURE, 'no-such-directory'));
   await expect(page.locator('[data-test~="error"]')).toContainText(/Not a GitHub URL or a readable directory: .*no-such-directory/);
