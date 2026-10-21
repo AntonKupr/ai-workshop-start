@@ -1,5 +1,5 @@
 import { AtlasError, RateLimitError } from './errors.ts';
-import { findSkills, type SkillFile } from './find.ts';
+import { collapseCopies, findSkills, type SkillFile } from './find.ts';
 import { sortSkills, type Organization, type Repository, type Skill } from './model.ts';
 import { parseSkill } from './parse.ts';
 
@@ -86,14 +86,15 @@ function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-/** fetch → find → parse. Nothing is stored: the result is all there is. */
+/** fetch → find → parse, copies collapsed. Nothing is stored: the result is all there is. */
 export async function scan(source: Source): Promise<ScanResult> {
   const files = findSkills(source.paths, source.repository.name);
   // The files are read at the same time: on GitHub, each one is a request.
   const results = await Promise.all(files.map((file) => readSkill(source, file)));
+  const malformed = new Set(results.flatMap((result) => (result.skill && result.warning ? [result.skill.path] : [])));
   return {
     repository: source.repository,
-    skills: sortSkills(results.flatMap((result) => (result.skill ? [result.skill] : []))),
+    skills: sortSkills(collapseCopies(results.flatMap((result) => (result.skill ? [result.skill] : [])), malformed)),
     warnings: [...source.warnings, ...results.flatMap((result) => (result.warning ? [result.warning] : []))],
   };
 }
@@ -109,7 +110,7 @@ async function readSkill(source: Source, file: SkillFile): Promise<{ skill?: Ski
     name: parsed.name ?? file.name,
     description: parsed.description,
     commit: source.repository.commit,
-    copies: file.copies,
+    copies: [],
     properties: parsed.properties,
     body: parsed.body,
   };

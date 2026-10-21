@@ -11,6 +11,10 @@ its other front matter and its *body*, the Markdown after it
 ## Details
 - **GitHub API**, no clone; *under 5 s* for intellij-community
 - The name: front matter, else the directory
+- Copies: the same name in *another agent's folder* (`.agents`, `.claude`, `.github`, `agent` `/skills`)
+  → *one* skill, at the first path; the others are its `copies`, in path order. The same name in one folder,
+  or outside them, is another skill; a copy joins the first path with that name
+- A copy with malformed front matter is never the first: the first well-formed path keeps the skill
 - The link pins the *scanned commit*
 - Malformed front matter → a *warning*, the scan goes on
 - Unreachable repository → a clear message, exit code 1

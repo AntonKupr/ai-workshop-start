@@ -58,6 +58,24 @@ test('GET /api/scan of ./fixture: sorted by name, linked to the files, the malfo
   assert.match(body.warnings[0], /^\.agents\/skills\/release-checklist\/SKILL\.md: malformed front matter: /);
 });
 
+test('GET /api/scan: the same skill in other agents\' folders → one skill with its copies', async (t) => {
+  const repository = mkdtempSync(join(tmpdir(), 'skill-atlas-copies-'));
+  t.after(() => rmSync(repository, { recursive: true, force: true }));
+  for (const path of ['.claude/skills/commits', '.github/skills/commits', '.agents/skills/alpha']) {
+    mkdirSync(join(repository, path), { recursive: true });
+    writeFileSync(join(repository, path, 'SKILL.md'), `---\nname: ${path.split('/').at(-1)}\ndescription: The skill.\n---\n`);
+  }
+  const { status, body } = await scan(repository);
+  assert.equal(status, 200);
+  assert.deepEqual(
+    body.skills.map((skill) => [skill.name, skill.path, skill.copies]),
+    [
+      ['alpha', '.agents/skills/alpha/SKILL.md', []],
+      ['commits', '.claude/skills/commits/SKILL.md', ['.github/skills/commits/SKILL.md']],
+    ],
+  );
+});
+
 test('GET /api/scan: an unreachable repository → 400 and the CLI message', async () => {
   const missing = await scan(join(FIXTURE, 'no-such-directory'));
   assert.equal(missing.status, 400);
