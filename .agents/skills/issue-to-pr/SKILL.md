@@ -19,7 +19,11 @@ Use to implement an issue or fix a bug in the project
 6. Implement the minimal change in `src/` that makes the test pass.
 7. Update `spec/` in the same change if the behavior described there changed.
 8. Run `npm test` again; all tests must pass locally.
-9. Commit, push the branch, and open a PR to `main` with `gh pr create`.
+9. If any question about the decision stays open, ask it in the Slack channel
+   `akupr-channel` (channel id `C0CAVCXUD54`) of the "AI Workshop at JetBrains"
+   workspace (`aiworkshopatjetbrains.slack.com`), using the `SLACK_BOT_TOKEN`
+   from the environment variables, and wait for the answer before proceeding.
+10. Commit, push the branch, and open a PR to `main` with `gh pr create`.
 
 ## Rules
 
